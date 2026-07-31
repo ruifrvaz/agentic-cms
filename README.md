@@ -94,6 +94,20 @@ scaffold/tree/     the scaffolding that gets installed (edit this to change
                    what ships; `all:` embed includes the dot-directories)
 ```
 
+## Development
+
+```sh
+make build       # build the binary
+make test        # go vet + go unit tests
+make smoke-test  # build, then run the installer end-to-end against a temp sandbox
+```
+
+`smoke-test` builds the binary, runs the Go test suite, sanity-checks `--version`/
+`--help`, then drives `scripts/smoke-test-installer.sh`: a real `agentic-cms init`
+run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
+`{{DATE}}`), plus idempotency and brownfield `CLAUDE.md`-merge checks. Set
+`KEEP_SMOKE_DIR=1` to keep the sandbox for inspection.
+
 ## Design notes
 
 - **Markdown is the database.** Everything is greppable, diffable, and versionable
