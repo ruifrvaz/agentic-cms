@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "name": "main",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/bin/**": true,
+      "**/obj/**": true
+    }
+  }
+}
