@@ -13,7 +13,7 @@ Read `CONTENT.md` at the project root first if you haven't this session.
    belongs to. If no topic fits, run `content-new` first (confirm with the user).
 2. **Check for duplicates** in the topic folder and the index. If a page for this
    subject exists, extend it instead (or use `content-add-notes`).
-3. **Create** `docs/<topic>/<item>.md` from `.content-gen/templates/doc.md`.
+3. **Create** `docs/<topic>/<item>.md` from `.agentic-cms/templates/doc.md`.
    Kebab-case filename, no dates in the name. Fill frontmatter completely; write a
    2-3 sentence Summary and the Content body from what you know or what the user
    provided. Cite raw sources in `sources:` when the content derives from them.

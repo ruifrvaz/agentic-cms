@@ -1,5 +1,5 @@
-// content-gen — installer for a markdown-based agentic content management
-// system. `content-gen init` lays the scaffolding (raw/, docs/, wiki/, skills,
+// agentic-cms — installer for a markdown-based agentic content management
+// system. `agentic-cms init` lays the scaffolding (raw/, docs/, wiki/, skills,
 // subagents, templates, schema) on top of the current project folder.
 package main
 
@@ -8,20 +8,20 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/ruifrvaz/content-gen/scaffold"
+	"github.com/ruifrvaz/agentic-cms/scaffold"
 )
 
-const version = "0.1.0"
+var version = "0.1.0"
 
-const usage = `content-gen %s — agentic content management scaffolding
+const usage = `agentic-cms %s — agentic content management scaffolding
 
 Usage:
-  content-gen init [dir]   install the scaffolding into dir (default: .)
-  content-gen version      print version
-  content-gen help         show this help
+  agentic-cms init [dir]   install the scaffolding into dir (default: .)
+  agentic-cms version      print version
+  agentic-cms help         show this help
 
 init is non-destructive: existing files are never overwritten. An existing
-CLAUDE.md is extended with a managed content-gen block instead of replaced.
+CLAUDE.md is extended with a managed agentic-cms block instead of replaced.
 `
 
 func main() {
@@ -37,15 +37,15 @@ func main() {
 			dir = os.Args[2]
 		}
 		if err := runInit(dir); err != nil {
-			fmt.Fprintf(os.Stderr, "content-gen: %v\n", err)
+			fmt.Fprintf(os.Stderr, "agentic-cms: %v\n", err)
 			os.Exit(1)
 		}
 	case "version", "--version", "-v":
-		fmt.Println("content-gen " + version)
+		fmt.Println("agentic-cms " + version)
 	case "help", "--help", "-h":
 		fmt.Printf(usage, version)
 	default:
-		fmt.Fprintf(os.Stderr, "content-gen: unknown command %q\n\n", os.Args[1])
+		fmt.Fprintf(os.Stderr, "agentic-cms: unknown command %q\n\n", os.Args[1])
 		fmt.Printf(usage, version)
 		os.Exit(2)
 	}
@@ -53,7 +53,7 @@ func main() {
 
 func runInit(dir string) error {
 	if runtime.GOOS != "linux" {
-		fmt.Fprintln(os.Stderr, "warning: content-gen currently targets Linux; proceeding anyway")
+		fmt.Fprintln(os.Stderr, "warning: agentic-cms currently targets Linux; proceeding anyway")
 	}
 
 	info, err := os.Stat(dir)
@@ -68,7 +68,7 @@ func runInit(dir string) error {
 	if dir != "." {
 		abs = dir
 	}
-	fmt.Printf("Initializing content-gen scaffolding in %s\n", abs)
+	fmt.Printf("Initializing agentic-cms scaffolding in %s\n", abs)
 
 	res, err := scaffold.Install(dir)
 	if err != nil {

@@ -14,12 +14,12 @@ var wantFiles = []string{
 	"raw/README.md",
 	"wiki/index.md",
 	"wiki/log.md",
-	".content-gen/VERSION",
-	".content-gen/templates/doc.md",
-	".content-gen/templates/entity.md",
-	".content-gen/templates/concept.md",
-	".content-gen/templates/source.md",
-	".content-gen/templates/topic.md",
+	".agentic-cms/VERSION",
+	".agentic-cms/templates/doc.md",
+	".agentic-cms/templates/entity.md",
+	".agentic-cms/templates/concept.md",
+	".agentic-cms/templates/source.md",
+	".agentic-cms/templates/topic.md",
 	".claude/skills/content-new/SKILL.md",
 	".claude/skills/content-new-item/SKILL.md",
 	".claude/skills/content-research/SKILL.md",
@@ -56,7 +56,7 @@ func TestInstallGreenfield(t *testing.T) {
 		t.Error("wiki/log.md missing today's date")
 	}
 	// Templates must keep their placeholders.
-	b, _ = os.ReadFile(filepath.Join(dir, ".content-gen", "templates", "doc.md"))
+	b, _ = os.ReadFile(filepath.Join(dir, ".agentic-cms", "templates", "doc.md"))
 	if !strings.Contains(string(b), "{{TITLE}}") {
 		t.Error("template lost {{TITLE}} placeholder")
 	}

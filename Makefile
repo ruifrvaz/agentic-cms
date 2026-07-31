@@ -1,4 +1,4 @@
-BINARY  := content-gen
+BINARY  := agentic-cms
 PREFIX  ?= /usr/local
 
 .PHONY: build install test clean

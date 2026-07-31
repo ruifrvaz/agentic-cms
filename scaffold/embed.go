@@ -1,4 +1,4 @@
-// Package scaffold embeds the content-gen scaffolding tree and installs it
+// Package scaffold embeds the agentic-cms scaffolding tree and installs it
 // into a target project directory.
 package scaffold
 
@@ -13,17 +13,17 @@ import (
 )
 
 // Tree holds the embedded scaffolding. The all: prefix is required so that
-// dot-directories like .claude and .content-gen are included.
+// dot-directories like .claude and .agentic-cms are included.
 //
 //go:embed all:tree
 var Tree embed.FS
 
 const treeRoot = "tree"
 
-// markers delimiting the block content-gen manages inside CLAUDE.md.
+// markers delimiting the block agentic-cms manages inside CLAUDE.md.
 const (
-	markerBegin = "<!-- content-gen:begin -->"
-	markerEnd   = "<!-- content-gen:end -->"
+	markerBegin = "<!-- agentic-cms:begin -->"
+	markerEnd   = "<!-- agentic-cms:end -->"
 )
 
 // Result summarizes what Install did.
@@ -35,7 +35,7 @@ type Result struct {
 
 // Install writes the scaffold into dir. It is non-destructive: existing files
 // are never overwritten (they are reported as skipped). CLAUDE.md gets special
-// treatment: if it already exists and does not contain the content-gen block,
+// treatment: if it already exists and does not contain the agentic-cms block,
 // the block is appended; otherwise it is left alone.
 func Install(dir string) (*Result, error) {
 	res := &Result{}

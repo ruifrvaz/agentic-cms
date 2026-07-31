@@ -1,4 +1,4 @@
-# content-gen
+# agentic-cms
 
 An agentic content management system built purely on markdown files, templates,
 skills, and subagents — no database, no server, no license. A single Go binary
@@ -34,7 +34,7 @@ the agent runs the skills, you browse the markdown.
 Linux only for now.
 
 ```sh
-go install github.com/ruifrvaz/content-gen@latest
+go install github.com/ruifrvaz/agentic-cms@latest
 # or from a clone:
 make build && sudo make install
 ```
@@ -43,11 +43,11 @@ make build && sudo make install
 
 ```sh
 cd your-project
-content-gen init
+agentic-cms init
 ```
 
 `init` is non-destructive and idempotent: existing files are never overwritten, and
-an existing `CLAUDE.md` gets a managed `<!-- content-gen -->` block appended rather
+an existing `CLAUDE.md` gets a managed `<!-- agentic-cms -->` block appended rather
 than being replaced. Run it again after upgrading to pick up new scaffold files.
 
 Then open your agent in the project and use the skills:
@@ -76,7 +76,7 @@ your-project/
 ├── raw/                    ← immutable sources (+ assets/)
 ├── docs/                   ← organized topical markdown
 ├── wiki/                   ← index.md, log.md, entities/, concepts/, sources/
-├── .content-gen/           ← templates + installed version
+├── .agentic-cms/           ← templates + installed version
 └── .claude/
     ├── skills/content-*/   ← the eight skills above
     └── agents/             ← researcher, importer, exporter
@@ -110,7 +110,7 @@ scaffold/tree/     the scaffolding that gets installed (edit this to change
 ## Roadmap
 
 - Codex and Copilot compatibility (AGENTS.md generation)
-- `content-gen upgrade` with scaffold diffing
+- `agentic-cms upgrade` with scaffold diffing
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
 - macOS/Windows targets
 

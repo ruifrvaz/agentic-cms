@@ -41,11 +41,11 @@ Never use this recovery in CI or another headless environment. Do not start or r
 
 ## Project Name
 
-content-gen
+agentic-cms
 
 ## Purpose / Goal
 
-Provide an agentic content management system built from Markdown files, templates, skills, and subagents. The `content-gen` CLI installs a thin scaffold over an existing or empty project so coding agents can import raw sources, organize documentation, maintain a synthesis wiki, research gaps, and export deliverables without a database or server.
+Provide an agentic content management system built from Markdown files, templates, skills, and subagents. The `agentic-cms` CLI installs a thin scaffold over an existing or empty project so coding agents can import raw sources, organize documentation, maintain a synthesis wiki, research gaps, and export deliverables without a database or server.
 
 ## Tech Stack
 

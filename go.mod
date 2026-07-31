@@ -1,3 +1,3 @@
-module github.com/ruifrvaz/content-gen
+module github.com/ruifrvaz/agentic-cms
 
 go 1.21

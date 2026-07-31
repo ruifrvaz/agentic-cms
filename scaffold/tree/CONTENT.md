@@ -40,9 +40,9 @@ wiki/
   entities/           pages about specific things (people, products, systems, orgs)
   concepts/           pages about ideas, patterns, themes
   sources/            one summary page per ingested raw source
-.content-gen/
+.agentic-cms/
   templates/          markdown templates for every page type
-  VERSION             scaffold version installed by content-gen
+  VERSION             scaffold version installed by agentic-cms
 .claude/
   skills/             content-* skills (workflows)
   agents/             researcher, importer, exporter subagents
@@ -69,7 +69,7 @@ wiki/
 - **Cross-links**: use relative markdown links (`[X](../concepts/x.md)`). Obsidian-style
   `[[wikilinks]]` are acceptable if the user works in Obsidian; pick one per project
   and record the choice here.
-- **Templates**: always start new pages from `.content-gen/templates/`. Do not invent
+- **Templates**: always start new pages from `.agentic-cms/templates/`. Do not invent
   ad-hoc page shapes.
 - **index.md**: updated on EVERY operation that adds, renames, or removes a page.
   Format: one line per page — `- [Title](path) — one-line summary`.

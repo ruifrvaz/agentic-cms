@@ -15,4 +15,4 @@ Greppable with: `grep "^## \[" wiki/log.md | tail -5`
 
 ---
 
-## [{{DATE}}] init | scaffold installed by content-gen
+## [{{DATE}}] init | scaffold installed by agentic-cms

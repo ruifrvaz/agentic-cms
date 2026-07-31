@@ -13,7 +13,7 @@ Read `CONTENT.md` at the project root first if you haven't this session.
    obvious from the request.
 2. **Check** `wiki/index.md` — does this topic (or a near-duplicate) already exist?
    If yes, propose extending it instead of creating a new one.
-3. **Create** `docs/<topic>/README.md` from `.content-gen/templates/topic.md`,
+3. **Create** `docs/<topic>/README.md` from `.agentic-cms/templates/topic.md`,
    filling `{{TITLE}}`, `{{TOPIC}}`, `{{DATE}}` (today, YYYY-MM-DD). Write the
    "About this topic" section from what the user told you.
 4. **Seed the wiki** only if the topic implies obvious entities/concepts the user
