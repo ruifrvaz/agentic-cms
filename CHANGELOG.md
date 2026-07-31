@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial agentic Markdown CMS scaffold and Go CLI installer. (4c6224a)
-- Renamed the project and installed scaffold from `content-gen` to `agentic-cms`. (e43901a)
 - Installer smoke-test coverage for validating generated project scaffolds. (e0d5307)
 - Multi-root VS Code workspace configuration for task worktrees. (48f2b9e)
 - Post-merge release automation that tags releases and creates GitHub Releases. (18d9647)
