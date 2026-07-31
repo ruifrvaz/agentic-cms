@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TREE_DIR="$REPO_ROOT/scaffold/tree"
 
-BINARY="${1:-$REPO_ROOT/agentic-cms}"
+BINARY="${1:-$REPO_ROOT/installer/agentic-cms}"
 if [[ ! -x "$BINARY" ]]; then
     echo "error: binary not found or not executable: $BINARY" >&2
     echo "hint: run 'make build' first" >&2
