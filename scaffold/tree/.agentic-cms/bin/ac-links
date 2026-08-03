@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# ac-links — check relative markdown links in docs/ and wiki/. JSON on stdout.
+#   ac-links check
+set -euo pipefail
+[ "${1:-}" = "check" ] || { python3 -c 'import json;print(json.dumps({"ok":False,"error":"usage: ac-links check"}))'; exit 1; }
+python3 <<'PYEOF'
+import os, json, re, glob
+
+LINK_RE = re.compile(r"\[[^\]]*\]\(([^)#\s]+)(?:#[^)\s]*)?\)")
+broken, checked = [], 0
+
+for pattern in ("docs/**/*.md", "wiki/**/*.md"):
+    for page in glob.glob(pattern, recursive=True):
+        text = open(page, encoding="utf-8").read()
+        for m in LINK_RE.finditer(text):
+            target = m.group(1)
+            if re.match(r"^[a-z]+://|^mailto:", target):
+                continue
+            checked += 1
+            # Links may be relative to the page's directory or to the project
+            # root (the index convention); either resolving is fine.
+            rel_page = os.path.normpath(os.path.join(os.path.dirname(page), target))
+            rel_root = os.path.normpath(target)
+            if not os.path.exists(rel_page) and not os.path.exists(rel_root):
+                line = text[:m.start()].count("\n") + 1
+                broken.append({"page": page, "line": line, "target": target})
+
+print(json.dumps({"ok": True, "clean": not broken,
+                  "links_checked": checked, "broken": broken}))
+PYEOF

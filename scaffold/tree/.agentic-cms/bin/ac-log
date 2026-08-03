@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# ac-log — append to / read the operations log (wiki/log.md). JSON on stdout.
+#   ac-log append <operation> <subject> [detail]
+#   ac-log tail [n]
+set -euo pipefail
+LOG="wiki/log.md"
+
+die() { python3 -c 'import json,sys;print(json.dumps({"ok":False,"error":sys.argv[1]}))' "$1"; exit 1; }
+[ -f "$LOG" ] || die "wiki/log.md not found — run from the project root (agentic-cms init?)"
+
+cmd=${1:-}; shift || true
+case "$cmd" in
+  append)
+    [ $# -ge 2 ] || die "usage: ac-log append <operation> <subject> [detail]"
+    op=$1; subject=$2; detail=${3:-}
+    d=$(date +%F)
+    {
+      echo ""
+      echo "## [$d] $op | $subject"
+      if [ -n "$detail" ]; then echo ""; echo "$detail"; fi
+    } >> "$LOG"
+    python3 -c 'import json,sys;print(json.dumps({"ok":True,"date":sys.argv[1],"operation":sys.argv[2],"subject":sys.argv[3]}))' "$d" "$op" "$subject"
+    ;;
+  tail)
+    n=${1:-5}
+    grep '^## \[' "$LOG" | tail -n "$n" | python3 -c '
+import sys, json, re
+out = []
+for line in sys.stdin:
+    m = re.match(r"^## \[(.+?)\] (\S+) \| (.*)$", line.strip())
+    if m:
+        out.append({"date": m.group(1), "operation": m.group(2), "subject": m.group(3)})
+print(json.dumps({"ok": True, "entries": out}))'
+    ;;
+  *)
+    die "usage: ac-log append|tail"
+    ;;
+esac

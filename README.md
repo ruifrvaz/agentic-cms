@@ -48,7 +48,11 @@ agentic-cms init
 
 `init` is non-destructive and idempotent: existing files are never overwritten, and
 an existing `CLAUDE.md` gets a managed `<!-- agentic-cms -->` block appended rather
-than being replaced. Run it again after upgrading to pick up new scaffold files.
+than being replaced. Run it again after upgrading to pick up new scaffold files —
+or run `agentic-cms update`, which does both: it fetches the latest release,
+replaces the binary, and re-runs `init` in the current directory if it looks like
+an installed project (a `.agentic-cms/` directory is present). `agentic-cms version`
+prints what's currently installed.
 
 Then open your agent in the project and use the skills:
 
@@ -58,6 +62,7 @@ Then open your agent in the project and use the skills:
 | `content-new-item` | Add a content item to a topic |
 | `content-import` | Ingest PPTX/DOCX/PDF/text into `raw/` → `docs/` → `wiki/`; brownfield sweeps of whole folders |
 | `content-research` | Web-research a question and file the findings |
+| `content-query` | Answer a directed question over the whole knowledge base, cited |
 | `content-add-notes` | Annotate an existing item |
 | `content-list` | Inventory, recent activity, drift report |
 | `content-lint` | Health check: contradictions, orphans, stale claims, broken links |
@@ -76,9 +81,9 @@ your-project/
 ├── raw/                    ← immutable sources (+ assets/)
 ├── docs/                   ← organized topical markdown
 ├── wiki/                   ← index.md, log.md, entities/, concepts/, sources/
-├── .agentic-cms/           ← templates + installed version
+├── .agentic-cms/           ← templates, installed version, deterministic bin/ toolkit
 └── .claude/
-    ├── skills/content-*/   ← the eight skills above
+    ├── skills/content-*/   ← the nine skills above
     └── agents/             ← researcher, importer, exporter
 ```
 
@@ -88,7 +93,9 @@ the agent when importing/exporting — the scaffold itself is pure markdown.
 ## Repository layout
 
 ```
-main.go            CLI (init, version, help)
+main.go            CLI (init, update, version, help)
+update.go          self-update: fetch latest GitHub release, replace the
+                   binary, re-run init in the current directory
 scaffold/embed.go  go:embed + non-destructive installer
 scaffold/tree/     the scaffolding that gets installed (edit this to change
                    what ships; `all:` embed includes the dot-directories)
@@ -97,9 +104,11 @@ scaffold/tree/     the scaffolding that gets installed (edit this to change
 ## Development
 
 ```sh
-make build       # build the binary
+make build       # build the binary (ldflags-versioned from git describe)
+make build-all   # cross-compile linux/amd64 + linux/arm64 release assets
 make test        # go vet + go unit tests
 make smoke-test  # build, then run the installer end-to-end against a temp sandbox
+make version     # print the version that would be built
 ```
 
 `smoke-test` builds the binary, runs the Go test suite, sanity-checks `--version`/
@@ -117,6 +126,11 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
 - **`wiki/log.md` is the audit trail.** `grep "^## \[" wiki/log.md | tail -5`.
 - **Immutability by convention, enforced by schema.** Skills and agents are
   instructed never to touch `raw/`; lint catches drift.
+- **Deterministic core, judgment at the edges.** `.agentic-cms/bin/` (the `ac-*`
+  toolkit) owns every mechanical operation — page creation, frontmatter,
+  `wiki/index.md`, `wiki/log.md`, link checking, search — as JSON-in/JSON-out
+  bash+python3 scripts. Skills call it for structure and use their own judgment
+  only for summarizing, synthesis, and wording.
 - **Agent-agnostic core.** Skills/agents are markdown with YAML frontmatter;
   Codex/Copilot support means adding their config surface (e.g. `AGENTS.md`)
   around the same skill bodies.
@@ -124,9 +138,12 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
 ## Roadmap
 
 - Codex and Copilot compatibility (AGENTS.md generation)
-- `agentic-cms upgrade` with scaffold diffing
+- Scaffold diffing for `agentic-cms update` — it currently re-runs the
+  non-destructive `init` (adds new files, never touches existing ones); it
+  can't yet offer to update scaffold files whose *content* changed upstream
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
-- macOS/Windows targets
+- macOS/Windows targets (the update mechanism is already platform-general;
+  only the release build matrix needs to grow)
 
 ## License
 

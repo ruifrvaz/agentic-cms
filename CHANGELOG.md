@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Deterministic `.agentic-cms/bin/` toolkit (`ac-page`, `ac-index`, `ac-log`, `ac-links`, `ac-inventory`, `ac-search`) that skills call for mechanical wiki/frontmatter/index/log operations instead of hand-editing.
+- `content-query` skill for cited, directed questions over the compiled wiki.
+- `agentic-cms update`: self-updates the binary from the latest GitHub release, then re-runs `init` in the current directory to pick up new scaffold files.
+- `agentic-cms version` now resolves the Go module version for `go install .../agentic-cms@latest` installs, in addition to the ldflags-injected version used by `make build`.
+
+### Fixed
+
+- Installer's `{{DATE}}` substitution no longer corrupts `.agentic-cms/templates/*` (which must keep the placeholder live for `ac-page new` to fill in at page-creation time) or `.agentic-cms/bin/*` (whose source code references the literal placeholder string).
+
 ## [0.1.0] - 2026-08-01
 
 ### Added

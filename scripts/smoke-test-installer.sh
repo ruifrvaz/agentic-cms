@@ -89,10 +89,16 @@ echo "sandbox: $SANDBOX"
 echo
 
 # Expected greenfield tree: scaffold/tree/ with {{DATE}} resolved to today,
-# matching the substitution Install() performs on every embedded file.
+# matching the substitution Install() performs on every embedded file — except
+# .agentic-cms/templates/ (keeps {{DATE}} live for ac-page new to fill in at
+# page-creation time) and .agentic-cms/bin/ (source code referencing the
+# literal placeholder string, not a page carrying it).
 EXPECTED="$SANDBOX/expected"
 cp -r "$TREE_DIR" "$EXPECTED"
-find "$EXPECTED" -type f -print0 | xargs -0 sed -i "s/{{DATE}}/$TODAY/g"
+find "$EXPECTED" -type f \
+    -not -path "$EXPECTED/.agentic-cms/templates/*" \
+    -not -path "$EXPECTED/.agentic-cms/bin/*" \
+    -print0 | xargs -0 sed -i "s/{{DATE}}/$TODAY/g"
 
 # --- 1. Greenfield install ---
 echo "-- greenfield install --"
@@ -103,6 +109,46 @@ printf '%s\n' "$out" | sed 's/^/    /'
 assert_no_line_matches "$out" "  skipped  " "greenfield install reports no skips"
 assert_tree_matches "$EXPECTED" "$GREEN" "greenfield tree matches scaffold/tree/ (post {{DATE}} substitution)"
 assert_contains "$(cat "$GREEN/.agentic-cms/templates/doc.md")" "{{TITLE}}" "doc.md template keeps non-date placeholders"
+assert_contains "$(cat "$GREEN/.agentic-cms/templates/doc.md")" "{{DATE}}" "doc.md template keeps the {{DATE}} placeholder live"
+if [[ -x "$GREEN/.agentic-cms/bin/ac-index" ]]; then
+    pass "ac-index installed executable"
+else
+    fail "ac-index installed executable — not executable or missing"
+fi
+
+# --- 1b. Toolkit functional check ---
+# Exercises the installed ac-* scripts against the real filesystem output of
+# Install(), not just scaffold/tree/ in isolation — this is what would have
+# caught the installer's {{DATE}} substitution corrupting ac-page's own source
+# (the dict key "{{DATE}}" inside .agentic-cms/bin/ac-page).
+echo
+echo "-- toolkit functional check --"
+pushd "$GREEN" >/dev/null
+
+page_out="$(.agentic-cms/bin/ac-page new doc docs/smoke/check.md --title "Smoke Check" --topic smoke)"
+echo "    $page_out"
+if [[ "$page_out" == *'"ok": true'* ]]; then pass "ac-page new returns ok"; else fail "ac-page new returns ok — got: $page_out"; fi
+page_body="$(cat docs/smoke/check.md)"
+assert_contains "$page_body" "created: $TODAY" "ac-page new fills {{DATE}} with today's date"
+if [[ "$page_body" == *'{{DATE}}'* ]]; then fail "ac-page new left a raw {{DATE}} placeholder unfilled"; else pass "ac-page new left no unfilled {{DATE}} placeholder"; fi
+
+idx_out="$(.agentic-cms/bin/ac-index add topics docs/smoke/check.md "smoke test page")"
+echo "    $idx_out"
+if [[ "$idx_out" == *'"ok": true'* ]]; then pass "ac-index add returns ok"; else fail "ac-index add returns ok — got: $idx_out"; fi
+
+log_out="$(.agentic-cms/bin/ac-log append new-item "smoke/check")"
+echo "    $log_out"
+if [[ "$log_out" == *'"ok": true'* ]]; then pass "ac-log append returns ok"; else fail "ac-log append returns ok — got: $log_out"; fi
+
+check_out="$(.agentic-cms/bin/ac-index check)"
+echo "    $check_out"
+assert_contains "$check_out" '"clean": true' "ac-index check reports clean after add"
+
+links_out="$(.agentic-cms/bin/ac-links check)"
+echo "    $links_out"
+assert_contains "$links_out" '"clean": true' "ac-links check reports clean"
+
+popd >/dev/null
 
 # --- 2. Idempotent re-run ---
 echo

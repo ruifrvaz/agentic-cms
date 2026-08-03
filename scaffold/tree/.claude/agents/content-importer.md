@@ -24,12 +24,22 @@ Workflow:
      `markitdown` or `python-pptx` for PPTX (slide titles → headings, speaker notes
      → blockquotes), `pdftotext`/`markitdown` for PDF. Install tools as needed
      (`pip install markitdown python-pptx --break-system-packages` or venv).
-   - Clean the result (heading levels, tables, dead export artifacts) and write it
-     to its mapped path with full frontmatter, `sources:` pointing to the raw copy.
-   - Create `wiki/sources/<source>.md` from the template with summary and takeaways.
-4. **Integrate**: update entity/concept pages affected by the batch, update
-   `wiki/index.md` for every page created, and append one log entry per source:
-   `## [YYYY-MM-DD] import | <source>`.
+   - Create the page deterministically, then merge the cleaned conversion into it:
+     ```sh
+     .agentic-cms/bin/ac-page new doc docs/<topic>/<item>.md --title "<T>" --topic <topic> --raw-path raw/<file>
+     .agentic-cms/bin/ac-page new source wiki/sources/<slug>.md --title "<T>" --raw-path raw/<file>
+     ```
+     Write summary/takeaways into the source page; set `sources:` frontmatter.
+4. **Integrate** with the toolkit (JSON out — check `"ok"` on every call; see
+   `.agentic-cms/bin/README.md`):
+   ```sh
+   .agentic-cms/bin/ac-index add topics|sources <path> "<summary>"   # every page created
+   .agentic-cms/bin/ac-page touch <path>                             # every page edited
+   .agentic-cms/bin/ac-log append import "<source>" "<pages touched>" # one per source
+   ```
+   Update entity/concept pages affected by the batch the same way. Finish with
+   `.agentic-cms/bin/ac-index check` and `.agentic-cms/bin/ac-links check` — both
+   must report `"clean": true`.
 5. **Report back**: files imported, files skipped (and why), wiki pages touched,
    contradictions or duplicates found.
 
