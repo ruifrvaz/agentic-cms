@@ -7,6 +7,7 @@ created: {{DATE}}
 updated: {{DATE}}
 sources: []
 refs: []
+status: {{STATUS}}
 ---
 
 # {{TITLE}}

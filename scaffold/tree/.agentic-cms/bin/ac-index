@@ -99,6 +99,9 @@ elif cmd == "check":
     pages = set()
     for pattern in ("docs/**/*.md", "wiki/entities/*.md", "wiki/concepts/*.md", "wiki/sources/*.md"):
         pages.update(glob.glob(pattern, recursive=True))
+    # Drafts (docs/<topic>/drafts/*.md) are deliberately not wired into the
+    # index until promoted — see CONTENT.md's Drafts convention.
+    pages -= set(glob.glob("docs/*/drafts/*.md"))
     unindexed = sorted(pages - indexed)
     print(json.dumps({"ok": True, "clean": not dead and not unindexed,
                       "dead_entries": dead, "unindexed_pages": unindexed}))

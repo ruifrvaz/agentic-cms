@@ -34,6 +34,7 @@ raw/                  immutable sources (never modify)
 docs/                 organized topical documentation
   <topic>/            one folder per topic
     <item>.md         one file per content item
+    drafts/           optional: work-in-progress items (status: draft)
 wiki/
   index.md            catalog of every page: link + one-line summary, by category
   log.md              append-only journal of operations
@@ -78,9 +79,22 @@ synthesis, wording — stays with the agent. Full contract:
   updated: YYYY-MM-DD
   sources: [raw/file.pdf]   # raw sources this page draws on
   refs: [wiki/concepts/x.md]# pages this page depends on
+  status: final             # `draft` while work-in-progress; `final` once ready
   ---
   ```
 
+- **Drafts**: `status: draft` marks a page as not yet first-class content — a
+  brainstorm or half-formed note that will be iterated on before it graduates.
+  Set via `ac-page new ... --status draft`, writing to
+  `docs/<topic>/drafts/<item>.md` (near its eventual home). Drafts are NOT
+  wired into `wiki/index.md` or `wiki/log.md` while draft — no index entry,
+  no log entry, no orphan-page flag from `content-lint`. Only `status: final`
+  (the template default) or an absent `status` field counts as first-class
+  content subject to the normal wiki bookkeeping below. **Promotion**:
+  `ac-page promote docs/<topic>/drafts/<item>.md docs/<topic>/<item>.md`
+  moves the file, sets `status: final`, and touches `updated:` in one call;
+  then run the normal `content-new-item` register+log step (index entry, log
+  entry) against the new path.
 - **Cross-links**: use relative markdown links (`[X](../concepts/x.md)`). Obsidian-style
   `[[wikilinks]]` are acceptable if the user works in Obsidian; pick one per project
   and record the choice here.

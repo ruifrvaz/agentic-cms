@@ -17,6 +17,13 @@ for readme in sorted(glob.glob("docs/*/README.md")):
     items = [p for p in glob.glob(f"docs/{topic}/*.md") if not p.endswith("README.md")]
     topics[topic] = {"items": len(items), "files": sorted(os.path.basename(p) for p in items)}
 
+# Work-in-progress items (status: draft) — not yet wired into the wiki index/log.
+drafts = {}
+for path in sorted(glob.glob("docs/*/drafts/*.md")):
+    topic = path.split(os.sep)[1]
+    drafts.setdefault(topic, []).append(os.path.basename(path))
+drafts = {t: {"count": len(files), "files": sorted(files)} for t, files in drafts.items()}
+
 wiki = {cat: sorted(os.path.basename(p) for p in glob.glob(f"wiki/{cat}/*.md"))
         for cat in ("entities", "concepts", "sources")}
 
@@ -39,6 +46,7 @@ if os.path.isfile("wiki/log.md"):
 
 print(json.dumps({"ok": True,
                   "topics": topics,
+                  "drafts": drafts,
                   "wiki": {k: {"count": len(v), "files": v} for k, v in wiki.items()},
                   "raw_uningested": uningested,
                   "recent_log": log_entries[-5:]}))
