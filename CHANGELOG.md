@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `content-query` skill for cited, directed questions over the compiled wiki.
 - `agentic-cms update`: self-updates the binary from the latest GitHub release, then re-runs `init` in the current directory to pick up new scaffold files.
 - `agentic-cms version` now resolves the Go module version for `go install .../agentic-cms@latest` installs, in addition to the ldflags-injected version used by `make build`.
+- **Draft content state** (pending v0.2.0 · PR #2) — adds an optional `status: draft | final` frontmatter field and a `docs/<topic>/drafts/` convention for work-in-progress content, kept out of `wiki/index.md`/`wiki/log.md` until promoted; `ac-page` gained `--status` and a `promote` subcommand for the toolkit-driven create/promote flow.
 
 ### Fixed
 
