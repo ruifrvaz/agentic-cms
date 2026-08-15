@@ -7,16 +7,37 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"runtime/debug"
 
 	"github.com/ruifrvaz/agentic-cms/scaffold"
 )
 
-var version = "0.1.0"
+// version is overridden at build time via -X main.version=vX.Y.Z (see the
+// Makefile and the release workflow). It is left at "dev" for `go build .`
+// and `go run .` — including `go install github.com/ruifrvaz/agentic-cms@latest`,
+// which does not run our ldflags; resolvedVersion() falls back to the Go
+// module version embedded by the toolchain in that case.
+var version = "dev"
+
+// resolvedVersion returns the ldflags-injected version if set, otherwise
+// falls back to the module version recorded by `go install pkg@version`.
+func resolvedVersion() string {
+	if version != "dev" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return version
+}
 
 const usage = `agentic-cms %s — agentic content management scaffolding
 
 Usage:
   agentic-cms init [dir]   install the scaffolding into dir (default: .)
+  agentic-cms update       update the binary to the latest release, then
+                            re-run init in the current directory if it looks
+                            like an installed project
   agentic-cms version      print version
   agentic-cms help         show this help
 
@@ -25,8 +46,9 @@ CLAUDE.md is extended with a managed agentic-cms block instead of replaced.
 `
 
 func main() {
+	v := resolvedVersion()
 	if len(os.Args) < 2 {
-		fmt.Printf(usage, version)
+		fmt.Printf(usage, v)
 		os.Exit(2)
 	}
 
@@ -40,13 +62,15 @@ func main() {
 			fmt.Fprintf(os.Stderr, "agentic-cms: %v\n", err)
 			os.Exit(1)
 		}
+	case "update":
+		runUpdate(v)
 	case "version", "--version", "-v":
-		fmt.Println("agentic-cms " + version)
+		fmt.Println("agentic-cms " + v)
 	case "help", "--help", "-h":
-		fmt.Printf(usage, version)
+		fmt.Printf(usage, v)
 	default:
 		fmt.Fprintf(os.Stderr, "agentic-cms: unknown command %q\n\n", os.Args[1])
-		fmt.Printf(usage, version)
+		fmt.Printf(usage, v)
 		os.Exit(2)
 	}
 }

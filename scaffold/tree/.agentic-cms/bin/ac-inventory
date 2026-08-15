@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# ac-inventory — full inventory of the content base. JSON on stdout.
+#   ac-inventory
+set -euo pipefail
+python3 <<'PYEOF'
+import os, json, re, glob
+
+def fail(msg):
+    print(json.dumps({"ok": False, "error": msg})); raise SystemExit(1)
+
+if not os.path.isfile("wiki/index.md"):
+    fail("wiki/index.md not found — run from the project root")
+
+topics = {}
+for readme in sorted(glob.glob("docs/*/README.md")):
+    topic = readme.split(os.sep)[1]
+    items = [p for p in glob.glob(f"docs/{topic}/*.md") if not p.endswith("README.md")]
+    topics[topic] = {"items": len(items), "files": sorted(os.path.basename(p) for p in items)}
+
+wiki = {cat: sorted(os.path.basename(p) for p in glob.glob(f"wiki/{cat}/*.md"))
+        for cat in ("entities", "concepts", "sources")}
+
+# Raw files never referenced by any docs/wiki page (candidates for content-import).
+refs = ""
+for pattern in ("docs/**/*.md", "wiki/**/*.md"):
+    for p in glob.glob(pattern, recursive=True):
+        refs += open(p, encoding="utf-8").read()
+raw_files = [p for p in glob.glob("raw/**/*", recursive=True)
+             if os.path.isfile(p) and not p.startswith("raw/assets")
+             and os.path.basename(p) not in ("README.md", ".gitkeep")]
+uningested = sorted(p for p in raw_files if p not in refs and os.path.basename(p) not in refs)
+
+log_entries = []
+if os.path.isfile("wiki/log.md"):
+    for line in open("wiki/log.md", encoding="utf-8"):
+        m = re.match(r"^## \[(.+?)\] (\S+) \| (.*?)\s*$", line)
+        if m:
+            log_entries.append({"date": m.group(1), "operation": m.group(2), "subject": m.group(3)})
+
+print(json.dumps({"ok": True,
+                  "topics": topics,
+                  "wiki": {k: {"count": len(v), "files": v} for k, v in wiki.items()},
+                  "raw_uningested": uningested,
+                  "recent_log": log_entries[-5:]}))
+PYEOF

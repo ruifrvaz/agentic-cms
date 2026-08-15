@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# ac-page — create pages from templates, read/update frontmatter. JSON on stdout.
+#   ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>]
+#   ac-page meta <file.md>          frontmatter as JSON
+#   ac-page touch <file.md>         set updated: to today
+set -euo pipefail
+export AC_CMD="${1:-}"; shift || true
+python3 - "$@" <<'PYEOF'
+import sys, os, json, re, datetime
+
+TPL_DIR = ".agentic-cms/templates"
+TODAY = datetime.date.today().isoformat()
+
+def fail(msg):
+    print(json.dumps({"ok": False, "error": msg})); sys.exit(1)
+
+def read_fm(path):
+    text = open(path, encoding="utf-8").read()
+    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+    if not m:
+        return None, text
+    fm = {}
+    for line in m.group(1).splitlines():
+        km = re.match(r"^(\w[\w-]*):\s*(.*)$", line)
+        if km:
+            v = km.group(2).strip()
+            if v.startswith("[") and v.endswith("]"):
+                v = [x.strip() for x in v[1:-1].split(",") if x.strip()]
+            fm[km.group(1)] = v
+    return fm, text
+
+cmd = os.environ.get("AC_CMD", "")
+args = sys.argv[1:]
+
+if cmd == "new":
+    if len(args) < 2: fail("usage: ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>]")
+    tpl_name, dest = args[0], args[1]
+    opts = {}
+    it = iter(args[2:])
+    for a in it:
+        if a.startswith("--"):
+            opts[a[2:]] = next(it, "")
+    if "title" not in opts: fail("--title is required")
+    tpl = os.path.join(TPL_DIR, tpl_name + ".md")
+    if not os.path.isfile(tpl): fail(f"template not found: {tpl}")
+    if os.path.exists(dest): fail(f"refusing to overwrite existing file: {dest}")
+    content = open(tpl, encoding="utf-8").read()
+    slug = os.path.splitext(os.path.basename(dest))[0]
+    subst = {
+        "{{TITLE}}": opts["title"],
+        "{{TOPIC}}": opts.get("topic", ""),
+        "{{RAW_PATH}}": opts.get("raw-path", ""),
+        "{{DATE}}": TODAY,
+    }
+    for k, v in subst.items():
+        content = content.replace(k, v)
+    os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+    open(dest, "w", encoding="utf-8").write(content)
+    print(json.dumps({"ok": True, "path": dest, "template": tpl_name, "title": opts["title"], "slug": slug}))
+
+elif cmd == "meta":
+    if len(args) != 1: fail("usage: ac-page meta <file.md>")
+    if not os.path.isfile(args[0]): fail(f"no such file: {args[0]}")
+    fm, _ = read_fm(args[0])
+    if fm is None: fail(f"no frontmatter in {args[0]}")
+    print(json.dumps({"ok": True, "path": args[0], "frontmatter": fm}))
+
+elif cmd == "touch":
+    if len(args) != 1: fail("usage: ac-page touch <file.md>")
+    if not os.path.isfile(args[0]): fail(f"no such file: {args[0]}")
+    fm, text = read_fm(args[0])
+    if fm is None: fail(f"no frontmatter in {args[0]}")
+    new = re.sub(r"^(updated:).*$", rf"\1 {TODAY}", text, count=1, flags=re.M)
+    open(args[0], "w", encoding="utf-8").write(new)
+    print(json.dumps({"ok": True, "path": args[0], "updated": TODAY}))
+
+else:
+    fail("usage: ac-page new|meta|touch")
+PYEOF

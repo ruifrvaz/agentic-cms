@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# ac-index — maintain and check wiki/index.md. JSON on stdout.
+#   ac-index add <topics|entities|concepts|sources> <path> <summary>
+#   ac-index remove <path>
+#   ac-index list
+#   ac-index check      # drift: unindexed pages, dead index entries
+set -euo pipefail
+export AC_CMD="${1:-}"; shift || true
+python3 - "$@" <<'PYEOF'
+import sys, os, json, re, glob
+
+INDEX = "wiki/index.md"
+SECTIONS = {
+    "topics": "## Topics (docs/)",
+    "entities": "## Entities",
+    "concepts": "## Concepts",
+    "sources": "## Sources",
+}
+ENTRY_RE = re.compile(r"^- \[(.+?)\]\((.+?)\)(?:\s+—\s+(.*))?$")
+
+def fail(msg):
+    print(json.dumps({"ok": False, "error": msg})); sys.exit(1)
+
+if not os.path.isfile(INDEX):
+    fail("wiki/index.md not found — run from the project root")
+
+def load():
+    return open(INDEX, encoding="utf-8").read().splitlines()
+
+def save(lines):
+    open(INDEX, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+
+def parse(lines):
+    entries, section = [], None
+    for i, line in enumerate(lines):
+        for key, header in SECTIONS.items():
+            if line.strip() == header:
+                section = key
+        m = ENTRY_RE.match(line.strip())
+        if m and section:
+            entries.append({"section": section, "title": m.group(1),
+                            "path": m.group(2), "summary": m.group(3) or "", "line": i})
+    return entries
+
+def title_of(path):
+    try:
+        text = open(path, encoding="utf-8").read()
+        m = re.search(r"^title:\s*(.+)$", text, re.M)
+        if m: return m.group(1).strip()
+        m = re.search(r"^# (.+)$", text, re.M)
+        if m: return m.group(1).strip()
+    except OSError:
+        pass
+    return os.path.splitext(os.path.basename(path))[0]
+
+cmd = os.environ.get("AC_CMD", "")
+args = sys.argv[1:]
+lines = load()
+
+if cmd == "add":
+    if len(args) < 3: fail("usage: ac-index add <section> <path> <summary>")
+    section, path, summary = args[0], args[1], " ".join(args[2:])
+    if section not in SECTIONS: fail(f"section must be one of {sorted(SECTIONS)}")
+    if not os.path.isfile(path): fail(f"page does not exist: {path}")
+    if any(e["path"] == path for e in parse(lines)):
+        fail(f"already indexed: {path} (use remove first to re-add)")
+    header = SECTIONS[section]
+    entry = f"- [{title_of(path)}]({path}) — {summary}"
+    for i, line in enumerate(lines):
+        if line.strip() == header:
+            j = i + 1
+            end = next((k for k in range(j, len(lines)) if lines[k].startswith("## ")), len(lines))
+            block = [l for l in lines[j:end] if l.strip() != "_None yet._"]
+            while block and not block[-1].strip(): block.pop()
+            if not block: block = [""]
+            lines[j:end] = block + [entry, ""]
+            save(lines)
+            print(json.dumps({"ok": True, "action": "add", "section": section, "path": path}))
+            sys.exit(0)
+    fail(f"section header not found in index: {header}")
+
+elif cmd == "remove":
+    if len(args) != 1: fail("usage: ac-index remove <path>")
+    hits = [e for e in parse(lines) if e["path"] == args[0]]
+    if not hits: fail(f"not in index: {args[0]}")
+    for e in sorted(hits, key=lambda x: -x["line"]):
+        del lines[e["line"]]
+    save(lines)
+    print(json.dumps({"ok": True, "action": "remove", "path": args[0], "removed": len(hits)}))
+
+elif cmd == "list":
+    print(json.dumps({"ok": True, "entries": [
+        {k: e[k] for k in ("section", "title", "path", "summary")} for e in parse(lines)]}))
+
+elif cmd == "check":
+    entries = parse(lines)
+    indexed = {e["path"] for e in entries}
+    dead = sorted(p for p in indexed if not os.path.isfile(p))
+    pages = set()
+    for pattern in ("docs/**/*.md", "wiki/entities/*.md", "wiki/concepts/*.md", "wiki/sources/*.md"):
+        pages.update(glob.glob(pattern, recursive=True))
+    unindexed = sorted(pages - indexed)
+    print(json.dumps({"ok": True, "clean": not dead and not unindexed,
+                      "dead_entries": dead, "unindexed_pages": unindexed}))
+
+else:
+    fail("usage: ac-index add|remove|list|check")
+PYEOF

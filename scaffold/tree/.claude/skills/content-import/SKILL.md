@@ -1,46 +1,61 @@
 ---
 name: content-import
 description: Import raw sources (PPTX, DOCX, PDF, markdown, text, or a whole folder of unstructured content) into the CMS structure. Use for "import this file/deck/doc", "ingest X", or bringing an existing brownfield project's content into raw/, docs/ and the wiki.
+license: MIT
+compatibility: Requires bash and python3 (uses the .agentic-cms/bin toolkit); conversion may install pandoc, markitdown, or python-pptx
+allowed-tools: Read Write Edit Grep Glob Bash
 ---
 
 # content-import — ingest raw sources
 
-Read `CONTENT.md` at the project root first if you haven't this session.
+Read `CONTENT.md` at the project root first if you haven't this session. Toolkit
+contract: `.agentic-cms/bin/README.md` — check `"ok"` after every `ac-*` call.
 
 ## Two modes
 
-**Single-source ingest**: one file (PPTX, DOCX, PDF, md, txt, html).
-**Brownfield sweep**: a folder of existing unstructured content, possibly from
-another project. Delegate sweeps to the `content-importer` subagent; single files
-you can handle inline.
+**Single-source ingest**: one file — handle inline below.
+**Brownfield sweep**: a folder of unstructured content — delegate to the
+`content-importer` subagent (it follows this same procedure per file).
 
 ## Steps (per source)
 
-1. **Secure the raw copy**: if the file is not already under `raw/`, COPY it there
-   (never move, never modify the original). Extracted images go to `raw/assets/`.
+1. **Secure the raw copy** (deterministic):
+   ```sh
+   cp -n <original> raw/            # copy, never move; never overwrite
+   ```
+   Extracted media goes to `raw/assets/`.
 2. **Convert to markdown**:
-   - DOCX: `pandoc -f docx -t gfm --extract-media=raw/assets <file>` (fallback:
-     `python-docx` via a short script, or `markitdown`).
-   - PPTX: `python-pptx` script or `markitdown <file>` — capture slide titles as
-     headings, bullets as lists, and speaker notes as blockquotes.
-   - PDF: `pdftotext` or `markitdown`; OCR only if the text layer is missing.
-   - Install what you need (`pip install markitdown python-pptx`); prefer whatever
-     is already available.
-3. **File it**: place the cleaned markdown as `docs/<topic>/<item>.md` with full
-   frontmatter (`sources:` pointing at the raw path). Choose the topic from
-   `wiki/index.md`; ask the user only if genuinely ambiguous.
-4. **Integrate into the wiki**:
-   - Create `wiki/sources/<source>.md` from the source template: summary, key
-     takeaways, pages updated.
-   - Update every entity/concept page the source materially affects — new facts,
-     contradictions (flag them), new cross-references. One source touching many
-     pages is normal.
-5. **Update** `wiki/index.md`; append to `wiki/log.md`:
-   `## [YYYY-MM-DD] import | <source>` listing pages created/updated.
+   - DOCX: `pandoc -f docx -t gfm --extract-media=raw/assets <file>`
+   - PPTX: `markitdown <file>` or a `python-pptx` script — slide titles →
+     headings, bullets → lists, speaker notes → blockquotes
+   - PDF: `pdftotext` or `markitdown`; OCR only if the text layer is missing
+   Install what's missing (`pip install markitdown python-pptx --break-system-packages`).
+3. **File it** (deterministic shell, judgment content):
+   ```sh
+   .agentic-cms/bin/ac-inventory        # pick the topic; ask only if ambiguous
+   .agentic-cms/bin/ac-page new doc docs/<topic>/<item>.md --title "<Title>" --topic <topic> --raw-path raw/<file>
+   ```
+   Merge the converted markdown into the created page (clean heading levels,
+   tables, export artifacts) and set frontmatter `sources: [raw/<file>]`.
+4. **Wiki integration**:
+   ```sh
+   .agentic-cms/bin/ac-page new source wiki/sources/<source-slug>.md --title "<Source Title>" --raw-path raw/<file>
+   .agentic-cms/bin/ac-index add sources wiki/sources/<source-slug>.md "<one-line summary>"
+   ```
+   Write the summary/takeaways (judgment). Then update every entity/concept page
+   the source materially affects — new facts, contradictions (flag, don't
+   overwrite), cross-references. `ac-page touch` every page you edit; `ac-index
+   add` every page you create.
+5. **Log and verify**:
+   ```sh
+   .agentic-cms/bin/ac-log append import "<source>" "<pages created/updated>"
+   .agentic-cms/bin/ac-index check && .agentic-cms/bin/ac-links check
+   ```
+   Both must report `"clean": true`.
 
 ## Rules
 
-- `raw/` is append-only. Conversion artifacts and cleanup happen in `docs/`, never
-  by editing the raw file.
-- For sweeps: propose the topic mapping (which files go where) to the user before
-  executing, then process source by source.
+- `raw/` is append-only — cleanup happens in `docs/`, never by editing raw files.
+- Sweeps: propose the file → topic mapping for approval before mass-processing.
+- Conversion fidelity beats prettiness; never drop content silently — flag bad
+  conversions.

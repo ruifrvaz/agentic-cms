@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# ac-search — case-insensitive term search across wiki/ and docs/. JSON on stdout.
+#   ac-search <term> [term...]        (terms are OR-ed; files ranked by total hits)
+set -euo pipefail
+[ $# -ge 1 ] || { python3 -c 'import json;print(json.dumps({"ok":False,"error":"usage: ac-search <term> [term...]"}))'; exit 1; }
+python3 - "$@" <<'PYEOF'
+import sys, os, json, re, glob
+from collections import defaultdict
+
+terms = [t for t in sys.argv[1:] if t.strip()]
+patterns = [re.compile(re.escape(t), re.I) for t in terms]
+hits = defaultdict(list)
+
+for pattern in ("wiki/**/*.md", "docs/**/*.md"):
+    for page in glob.glob(pattern, recursive=True):
+        try:
+            lines = open(page, encoding="utf-8").read().splitlines()
+        except OSError:
+            continue
+        for i, line in enumerate(lines, 1):
+            matched = [t for t, p in zip(terms, patterns) if p.search(line)]
+            if matched:
+                hits[page].append({"line": i, "terms": matched, "text": line.strip()[:200]})
+
+ranked = sorted(hits.items(), key=lambda kv: -len(kv[1]))
+results = [{"file": f, "hit_count": len(h), "hits": h[:10]} for f, h in ranked[:20]]
+print(json.dumps({"ok": True, "terms": terms, "files_matched": len(ranked), "results": results}))
+PYEOF

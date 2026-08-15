@@ -41,12 +41,27 @@ wiki/
   concepts/           pages about ideas, patterns, themes
   sources/            one summary page per ingested raw source
 .agentic-cms/
+  bin/                deterministic CLI toolkit (ac-page, ac-index, ac-log,
+                      ac-links, ac-inventory, ac-search) — JSON on stdout;
+                      contract in bin/README.md
   templates/          markdown templates for every page type
   VERSION             scaffold version installed by agentic-cms
 .claude/
   skills/             content-* skills (workflows)
   agents/             researcher, importer, exporter subagents
 ```
+
+## The toolkit
+
+Mechanical operations MUST go through `.agentic-cms/bin/` instead of hand-editing:
+creating pages from templates (`ac-page new`), reading/updating frontmatter
+(`ac-page meta|touch`), index maintenance (`ac-index add|remove|check`), logging
+(`ac-log append`), link checking (`ac-links check`), inventory (`ac-inventory`),
+and term search (`ac-search`). Every command prints one JSON object; check `"ok"`
+before proceeding, and finish write operations with `ac-index check` /
+`ac-links check` returning `"clean": true`. Judgment work — summarizing,
+synthesis, wording — stays with the agent. Full contract:
+`.agentic-cms/bin/README.md`.
 
 ## Conventions
 
@@ -89,10 +104,10 @@ information is integrated into the wiki — source summary page created, relevan
 entity/concept pages updated, index updated, log appended. One source may touch
 many wiki pages; that is expected and desired.
 
-**Query**: to answer questions about the content, read `wiki/index.md` first, drill
-into relevant pages, then `docs/` and finally `raw/` only if needed. Good answers
-worth keeping should be filed back into the wiki as new pages — explorations
-compound.
+**Query** (skill: `content-query`): to answer questions about the content, read
+`wiki/index.md` first, drill into relevant pages, then `docs/` and finally `raw/`
+only if needed. Cite pages in answers. Good answers worth keeping should be filed
+back into the wiki as new pages — explorations compound.
 
 **Lint**: periodically health-check the wiki: contradictions between pages, stale
 claims, orphan pages with no inbound links, concepts mentioned but lacking a page,

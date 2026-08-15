@@ -7,9 +7,10 @@
 # release, smaqit.release-git-pr). Creates the tag when needed, then publishes
 # a GitHub Release with the matching CHANGELOG.md section as its notes.
 #
-# This template ships no build step — it only tags and publishes a Release.
-# Add your own build/artifact-upload steps to the `release` job below if your
-# project publishes binaries or other release assets.
+# Also builds Linux amd64/arm64 binaries (ldflags-versioned, matching the
+# project's current supported-platform scope) and attaches them to the
+# Release as `agentic-cms_<os>_<arch>` — `agentic-cms update` fetches these
+# assets by that exact name (see update.go).
 name: Post-Merge Release
 
 on:
@@ -95,17 +96,69 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  release:
-    name: Create GitHub Release
+  build:
+    name: Build Binaries
     needs: [prepare, tag]
     if: |
       always() &&
       needs.prepare.result == 'success' &&
       (needs.tag.result == 'success' || needs.tag.result == 'skipped')
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: 0
+        run: |
+          mkdir -p dist
+          go build -ldflags="-X main.version=v${{ needs.prepare.outputs.version }}" \
+            -o "dist/agentic-cms_${{ matrix.os }}_${{ matrix.arch }}" .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentic-cms_${{ matrix.os }}_${{ matrix.arch }}
+          path: dist/*
+
+  release:
+    name: Create GitHub Release
+    needs: [prepare, build]
+    if: |
+      always() &&
+      needs.prepare.result == 'success' &&
+      needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release
+          find artifacts -type f -exec cp {} release/ \;
 
       - name: Extract changelog for this version
         id: changelog
@@ -119,6 +172,7 @@ jobs:
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
           body_path: release_notes.md
+          files: release/*
           draft: false
           prerelease: ${{ contains(needs.prepare.outputs.version, '-') }}
         env:
