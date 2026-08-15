@@ -29,7 +29,9 @@ Re-run `ac-links check` and `ac-index check` after fixing — both must report
 
 - **Orphans**: for each wiki page in `ac-index list`, run
   `ac-search "<page-slug>"` — pages with no inbound links outside the index get
-  linked from the right hub page.
+  linked from the right hub page. Drafts (`status: draft`, under
+  `docs/<topic>/drafts/`) never appear in `ac-index list` by design, so they
+  never reach this check.
 - **Missing pages**: concepts/entities recurring across ≥2 pages (spot via
   `ac-search`) that lack their own page — list as candidates, create only with
   user approval.

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ac-page — create pages from templates, read/update frontmatter. JSON on stdout.
-#   ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>]
+#   ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>] [--status draft|final]
 #   ac-page meta <file.md>          frontmatter as JSON
 #   ac-page touch <file.md>         set updated: to today
+#   ac-page promote <src.md> <dest.md>   move a draft out of drafts/, set status: final, touch updated:
 set -euo pipefail
 export AC_CMD="${1:-}"; shift || true
 python3 - "$@" <<'PYEOF'
@@ -33,7 +34,7 @@ cmd = os.environ.get("AC_CMD", "")
 args = sys.argv[1:]
 
 if cmd == "new":
-    if len(args) < 2: fail("usage: ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>]")
+    if len(args) < 2: fail("usage: ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>] [--status draft|final]")
     tpl_name, dest = args[0], args[1]
     opts = {}
     it = iter(args[2:])
@@ -41,6 +42,7 @@ if cmd == "new":
         if a.startswith("--"):
             opts[a[2:]] = next(it, "")
     if "title" not in opts: fail("--title is required")
+    if opts.get("status", "final") not in ("draft", "final"): fail("--status must be draft or final")
     tpl = os.path.join(TPL_DIR, tpl_name + ".md")
     if not os.path.isfile(tpl): fail(f"template not found: {tpl}")
     if os.path.exists(dest): fail(f"refusing to overwrite existing file: {dest}")
@@ -50,6 +52,7 @@ if cmd == "new":
         "{{TITLE}}": opts["title"],
         "{{TOPIC}}": opts.get("topic", ""),
         "{{RAW_PATH}}": opts.get("raw-path", ""),
+        "{{STATUS}}": opts.get("status", "final"),
         "{{DATE}}": TODAY,
     }
     for k, v in subst.items():
@@ -57,6 +60,20 @@ if cmd == "new":
     os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
     open(dest, "w", encoding="utf-8").write(content)
     print(json.dumps({"ok": True, "path": dest, "template": tpl_name, "title": opts["title"], "slug": slug}))
+
+elif cmd == "promote":
+    if len(args) != 2: fail("usage: ac-page promote <src.md> <dest.md>")
+    src, dest = args
+    if not os.path.isfile(src): fail(f"no such file: {src}")
+    if os.path.exists(dest): fail(f"refusing to overwrite existing file: {dest}")
+    fm, text = read_fm(src)
+    if fm is None: fail(f"no frontmatter in {src}")
+    text = re.sub(r"^(status:).*$", "status: final", text, count=1, flags=re.M)
+    text = re.sub(r"^(updated:).*$", rf"\1 {TODAY}", text, count=1, flags=re.M)
+    os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+    open(dest, "w", encoding="utf-8").write(text)
+    os.remove(src)
+    print(json.dumps({"ok": True, "path": dest, "from": src, "updated": TODAY}))
 
 elif cmd == "meta":
     if len(args) != 1: fail("usage: ac-page meta <file.md>")
@@ -75,5 +92,5 @@ elif cmd == "touch":
     print(json.dumps({"ok": True, "path": args[0], "updated": TODAY}))
 
 else:
-    fail("usage: ac-page new|meta|touch")
+    fail("usage: ac-page new|meta|touch|promote")
 PYEOF

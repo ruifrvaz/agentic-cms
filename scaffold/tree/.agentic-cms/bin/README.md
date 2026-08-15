@@ -12,12 +12,17 @@ Requires bash and python3 (stdlib only).
 
 ### ac-page — pages and frontmatter
 ```
-ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>]
+ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>] [--status draft|final]
   templates: doc entity concept source topic  (from .agentic-cms/templates/)
   → {"ok":true,"path":...,"template":...,"title":...,"slug":...}
-  Refuses to overwrite. Fills {{TITLE}} {{TOPIC}} {{RAW_PATH}} {{DATE}}.
+  Refuses to overwrite. Fills {{TITLE}} {{TOPIC}} {{RAW_PATH}} {{STATUS}} {{DATE}}.
+  --status defaults to final; pass --status draft for docs/<topic>/drafts/ items.
 ac-page meta <file.md>    → {"ok":true,"path":...,"frontmatter":{...}}
 ac-page touch <file.md>   → sets updated: to today
+ac-page promote <src.md> <dest.md>
+  → {"ok":true,"path":...,"from":...,"updated":...}
+  Moves src to dest, sets status: final, touches updated:. Refuses to
+  overwrite an existing dest. Used to graduate a draft out of drafts/.
 ```
 
 ### ac-index — wiki/index.md maintenance
@@ -44,7 +49,9 @@ ac-links check            → {"ok":true,"clean":bool,"links_checked":n,"broken"
 
 ### ac-inventory — full content-base inventory
 ```
-ac-inventory              → {"ok":true,"topics":{...},"wiki":{...},"raw_uningested":[],"recent_log":[...]}
+ac-inventory              → {"ok":true,"topics":{...},"drafts":{...},"wiki":{...},"raw_uningested":[],"recent_log":[...]}
+  drafts: {<topic>: {"count":n,"files":[...]}} — status: draft items in docs/<topic>/drafts/,
+    not yet wired into the index (see CONTENT.md's Drafts convention)
 ```
 
 ### ac-search — term search (retrieval)

@@ -59,7 +59,7 @@ Then open your agent in the project and use the skills:
 | Skill | Purpose |
 |---|---|
 | `content-new` | Start a new topic in `docs/` |
-| `content-new-item` | Add a content item to a topic |
+| `content-new-item` | Add a content item to a topic; also handles work-in-progress drafts (`status: draft`) and promoting them later |
 | `content-import` | Ingest PPTX/DOCX/PDF/text into `raw/` → `docs/` → `wiki/`; brownfield sweeps of whole folders |
 | `content-research` | Web-research a question and file the findings |
 | `content-query` | Answer a directed question over the whole knowledge base, cited |

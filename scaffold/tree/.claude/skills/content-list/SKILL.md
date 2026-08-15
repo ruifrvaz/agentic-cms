@@ -21,10 +21,14 @@ skill is almost fully deterministic — three commands, then formatting.
    ```
 2. **Report** concisely from the JSON:
    - Topics with item counts (`topics`)
+   - Drafts by topic (`drafts`) — work in progress, kept separate from
+     first-class content; suggest promoting via `content-new-item` when one
+     looks ready
    - Wiki pages by category (`wiki.entities/concepts/sources`)
    - Raw sources not yet ingested (`raw_uningested`) — suggest `content-import`
    - Last 5 log entries (`recent_log`)
-   - Drift (`ac-index check`: `dead_entries`, `unindexed_pages`)
+   - Drift (`ac-index check`: `dead_entries`, `unindexed_pages`) — drafts never
+     appear here by design, not a drift signal
 3. **Offer to fix drift** if `ac-index check` was not clean:
    ```sh
    .agentic-cms/bin/ac-index remove <dead-path>              # per dead entry
