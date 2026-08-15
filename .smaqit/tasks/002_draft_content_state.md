@@ -1,8 +1,9 @@
 # Draft content state
 
-**Status:** Not Started
+**Status:** In Progress
 **Mode:** Assisted
 **Created:** 2026-08-14
+**Started:** 2026-08-15
 
 ## Description
 
@@ -37,10 +38,29 @@ content item.
 - **Promotion = a small, explicit step:** flip `status: draft` → remove the
   field (or set `final`), move the file from `docs/<topic>/drafts/` up to
   `docs/<topic>/`, then run the normal `content-new-item` wiki-wiring
-  (index entry, log entry). Open question for the implementer: whether this
-  is a mode/flag on `content-new-item` or warrants its own short skill —
-  lean toward extending `content-new-item` first to keep the skill surface
-  small, per the project's existing nine-skill footprint.
+  (index entry, log entry).
+- **Resolved: extend `content-new-item`, not a new skill.** Add "Draft" and
+  "Promote" modes alongside its existing flow, mirroring the "two modes"
+  pattern `content-import` already uses (single-source vs. brownfield
+  sweep). Keeps the nine-skill footprint; the promote path reuses
+  `content-new-item`'s existing register+log tail rather than duplicating
+  it in a new skill.
+- **Toolkit-level findings (from post-migration Discovery — the toolkit
+  didn't exist yet when this task was first drafted):**
+  - `.agentic-cms/bin/ac-index`'s `check` command globs `docs/**/*.md`
+    recursively for `unindexed_pages`, which would flag every draft
+    forever and break the `"clean": true` gate every write-skill depends
+    on. Needs a one-line exclusion for `docs/*/drafts/*.md`.
+  - `.agentic-cms/bin/ac-inventory` has no visibility into `drafts/` at
+    all — it must start reporting draft pages (path + topic) for
+    `content-list` to have anything to show.
+  - No change needed in `content-lint`: its orphan check only walks
+    `ac-index list`, which never contains drafts by construction — once
+    `ac-index` is fixed, drafts are structurally unreachable by that
+    check. `ac-links check` also needs no change — checking links *from*
+    drafts is desirable, not a false positive.
+  - Promotion refuses on a destination conflict (mirrors `ac-page new`'s
+    existing refuse-overwrite behavior) rather than attempting a merge.
 
 ## Implementation Steps
 
@@ -50,32 +70,67 @@ content item.
 2. Update `scaffold/tree/.agentic-cms/templates/doc.md` to show the optional
    `status:` field (commented example, not a default value, so untouched
    installs don't silently gain the field).
-3. Update `scaffold/tree/.claude/skills/content-new-item/SKILL.md` to support
-   starting an item as a draft, and to support promoting an existing draft to
-   first-class content.
-4. Update `scaffold/tree/.claude/skills/content-lint/SKILL.md` so draft items
-   are excluded from orphan-page and staleness checks.
-5. Update `scaffold/tree/.claude/skills/content-list/SKILL.md` to report
-   drafts in their own section, separate from first-class content.
-6. Consider a one-line mention in the root `README.md`'s "How it works" or
+3. Fix `scaffold/tree/.agentic-cms/bin/ac-index` (`check` command, the
+   `unindexed_pages` glob around line 100): exclude `docs/*/drafts/*.md` so
+   drafts never trip drift detection. Do this before step 5 — it depends on
+   it.
+4. Fix `scaffold/tree/.agentic-cms/bin/ac-inventory`: add a `drafts` field
+   to its JSON output (path + topic per draft page). Parallel with step 3;
+   step 6 depends on it.
+5. Restructure `scaffold/tree/.claude/skills/content-new-item/SKILL.md` into
+   a "Modes" section: **New item** (existing flow, unchanged), **Draft**
+   (same through page creation, `status: draft` set, but skip the
+   index/log register step), **Promote** (move the file out of `drafts/`,
+   clear `status:`, then run the normal register+log tail against the new
+   path). Depends on steps 3–4.
+6. Update `scaffold/tree/.claude/skills/content-list/SKILL.md` to report
+   drafts in their own section, sourced from `ac-inventory`'s new `drafts`
+   field. Depends on step 4.
+7. Add one clarifying sentence to
+   `scaffold/tree/.claude/skills/content-lint/SKILL.md` noting drafts are
+   excluded from orphan detection by construction (no functional change —
+   see Design Decisions) so this isn't mistaken for a gap later.
+8. Consider a one-line mention in the root `README.md`'s "How it works" or
    skills table if the addition is significant enough to surface there.
-7. Run `make smoke-test` — confirm the installer diff against
-   `scaffold/tree/` and existing greenfield/idempotency/brownfield checks
-   still pass unaffected (no new files ship in the base scaffold; drafts are
-   created per-project on demand).
+9. Run `make smoke-test` and `go test ./...` — confirm the installer diff
+   against `scaffold/tree/` and existing greenfield/idempotency/brownfield
+   checks still pass unaffected (no new files ship in the base scaffold;
+   drafts are created per-project on demand). Manually exercise the
+   toolkit too: create a draft via `ac-page new`, confirm `ac-index check`
+   stays clean, confirm `ac-inventory` lists it, promote it, confirm
+   `ac-index check` is still clean post-promotion.
 
 ## Known Issues Triage
+**Triaged:** 2026-08-15
+**Tools searched:** none — no third-party tools identified
+**Result:** Clear
 
-[Populated by smaqit.task-start via smaqit.utils.triage-issues. Do not edit manually.]
+Task scope is entirely internal (schema docs, skill instructions, and stdlib
+bash/python3 edits to the project's own toolkit) — no third-party
+product, library, or service dependency is introduced or at risk. GitHub
+issue search is not applicable.
+
+### Unresolvable Tools
+- (none)
+
+### Omitted Tools
+- (none)
+
+### Search Warnings
+- (none)
 
 ## Acceptance Criteria
 
 - [ ] `CONTENT.md` documents `status: draft | final` (default `final`) and
       the `docs/<topic>/drafts/` convention, including the promotion flow
 - [ ] `doc.md` template shows the optional `status:` field
+- [ ] `ac-index check` excludes `docs/*/drafts/*.md` from `unindexed_pages`
+- [ ] `ac-inventory` reports draft pages (path + topic)
 - [ ] `content-new-item` supports creating a draft (no wiki wiring) and
       promoting an existing draft to first-class content
 - [ ] `content-lint` does not flag drafts as orphans or stale content
+      (verify this holds once `ac-index` is fixed — expected by
+      construction, not a separate content-lint code change)
 - [ ] `content-list` reports drafts separately from first-class content
 - [ ] `make smoke-test` and `go test ./...` remain unaffected and passing
 
