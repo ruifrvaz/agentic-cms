@@ -31,7 +31,8 @@ Re-run `ac-links check` and `ac-index check` after fixing — both must report
   `ac-search "<page-slug>"` — pages with no inbound links outside the index get
   linked from the right hub page. Drafts (`status: draft`, under
   `docs/<topic>/drafts/`) never appear in `ac-index list` by design, so they
-  never reach this check.
+  never reach this check. Skip entries in the `archived` section: having no
+  inbound links is an archived page's expected steady state, not a defect.
 - **Missing pages**: concepts/entities recurring across ≥2 pages (spot via
   `ac-search`) that lack their own page — list as candidates, create only with
   user approval.
@@ -39,7 +40,9 @@ Re-run `ac-links check` and `ac-index check` after fixing — both must report
 ## Phase 3 — content-level (judgment: report, do not silently fix)
 
 - Contradictions between pages
-- Claims likely superseded by newer sources (compare `sources:` dates via `ac-page meta`)
+- Claims likely superseded by newer sources (compare `sources:` dates via
+  `ac-page meta`) — skip `status: archived` pages; retired content is not
+  expected to stay current
 - Data gaps a `content-research` run could fill
 
 ## Wrap up

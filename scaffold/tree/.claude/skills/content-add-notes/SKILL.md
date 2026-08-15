@@ -18,7 +18,7 @@ contract: `.agentic-cms/bin/README.md`.
    .agentic-cms/bin/ac-search <subject terms>
    .agentic-cms/bin/ac-index list
    ```
-   If no page exists, offer `content-new-item` instead.
+   If no page exists, offer `content-manage-item` instead.
 2. **Append** under the page's `## Notes` section (create the section if missing):
 
    ```markdown

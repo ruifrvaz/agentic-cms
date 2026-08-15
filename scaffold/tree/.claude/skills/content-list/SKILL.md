@@ -22,8 +22,10 @@ skill is almost fully deterministic — three commands, then formatting.
 2. **Report** concisely from the JSON:
    - Topics with item counts (`topics`)
    - Drafts by topic (`drafts`) — work in progress, kept separate from
-     first-class content; suggest promoting via `content-new-item` when one
+     first-class content; suggest promoting via `content-manage-item` when one
      looks ready
+   - Archived by topic (`archived`) — retired items, listed separately from
+     active content; un-archiving goes through `content-manage-item`
    - Wiki pages by category (`wiki.entities/concepts/sources`)
    - Raw sources not yet ingested (`raw_uningested`) — suggest `content-import`
    - Last 5 log entries (`recent_log`)

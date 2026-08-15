@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ac-index — maintain and check wiki/index.md. JSON on stdout.
-#   ac-index add <topics|entities|concepts|sources> <path> <summary>
+#   ac-index add <topics|entities|concepts|sources|archived> <path> <summary>
 #   ac-index remove <path>
 #   ac-index list
 #   ac-index check      # drift: unindexed pages, dead index entries
@@ -15,6 +15,7 @@ SECTIONS = {
     "entities": "## Entities",
     "concepts": "## Concepts",
     "sources": "## Sources",
+    "archived": "## Archived",
 }
 ENTRY_RE = re.compile(r"^- \[(.+?)\]\((.+?)\)(?:\s+—\s+(.*))?$")
 
@@ -77,7 +78,13 @@ if cmd == "add":
             save(lines)
             print(json.dumps({"ok": True, "action": "add", "section": section, "path": path}))
             sys.exit(0)
-    fail(f"section header not found in index: {header}")
+    # Known section whose header is absent (an index created before that
+    # section existed — init never rewrites an existing index.md): append it.
+    while lines and not lines[-1].strip(): lines.pop()
+    lines += ["", header, "", entry, ""]
+    save(lines)
+    print(json.dumps({"ok": True, "action": "add", "section": section, "path": path,
+                      "created_section": True}))
 
 elif cmd == "remove":
     if len(args) != 1: fail("usage: ac-index remove <path>")

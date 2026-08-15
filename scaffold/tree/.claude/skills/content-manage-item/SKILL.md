@@ -1,12 +1,12 @@
 ---
-name: content-new-item
-description: Create a single new content item (markdown page) inside an existing topic in docs/. Use when the user wants to add a document, article, spec, or page about something specific — "add a page on X", "write up Y", "document Z".
+name: content-manage-item
+description: Create a single new content item (markdown page) inside an existing topic in docs/, and manage the item lifecycle — drafts, promotion, archiving. Use for "add a page on X", "write up Y", "document Z", and also "archive X", "retire Y", "bring Z back from the archive".
 license: MIT
 compatibility: Requires bash and python3 (uses the .agentic-cms/bin toolkit)
 allowed-tools: Read Write Edit Grep Glob Bash(.agentic-cms/bin/*)
 ---
 
-# content-new-item — create a content item
+# content-manage-item — create and manage a content item
 
 Read `CONTENT.md` at the project root first if you haven't this session. All
 `ac-*` commands live in `.agentic-cms/bin/`, return JSON — check `"ok"` after
@@ -21,6 +21,9 @@ integration and no index/log registration yet — see "Promoting a draft"
 below for when it's ready to graduate.
 **Promote**: turn an existing draft into first-class content — see
 "Promoting a draft" below; it resumes at steps 4-5 against the promoted path.
+**Archive**: retire a first-class item into `docs/<topic>/archive/` — see
+"Archiving an item" below. Archive ≠ delete: the page stays indexed (under
+`## Archived`) and retrievable; un-archiving reverses it.
 
 ## Steps (New item / Draft)
 
@@ -75,9 +78,42 @@ below for when it's ready to graduate.
    path: wiki integration if warranted, then register/log/verify. This is the
    first time the item enters `wiki/index.md` and `wiki/log.md`.
 
+## Archiving an item
+
+1. **Move and mark** (deterministic, one call):
+   ```sh
+   .agentic-cms/bin/ac-page archive docs/<topic>/<item>.md docs/<topic>/archive/<item>.md
+   ```
+   Moves the file, sets `status: archived`, touches `updated:`. Refuses if the
+   destination already exists — flag that to the user rather than overwriting.
+2. **Re-file the index entry** — archived pages stay in the index, under
+   `## Archived` (the section is created automatically if missing):
+   ```sh
+   .agentic-cms/bin/ac-index remove docs/<topic>/<item>.md
+   .agentic-cms/bin/ac-index add archived docs/<topic>/archive/<item>.md "<original summary>"
+   .agentic-cms/bin/ac-log append archive "<topic>/<item>"
+   ```
+3. **Clean up references**: remove the item from its topic's `README.md` list,
+   then:
+   ```sh
+   .agentic-cms/bin/ac-index check && .agentic-cms/bin/ac-links check
+   ```
+   `ac-links check` will flag inbound links from active pages now pointing at
+   the old path — that is the point: update or remove each reference (and
+   `ac-page touch` every page you edit) so active content stops leaning on
+   retired material. Both checks must report `"clean": true` before finishing.
+
+**Un-archiving** is the exact reverse: `ac-page promote
+docs/<topic>/archive/<item>.md docs/<topic>/<item>.md` (sets `status: final`),
+re-file the index entry back (`ac-index remove` + `ac-index add topics ...`),
+`ac-log append unarchive "<topic>/<item>"`, re-add the item to the topic
+`README.md`, and verify both checks are clean.
+
 ## Rules
 
 - One subject per file; two subjects → two items, cross-linked.
 - Substance over scaffolding: a new item must contain real content, not just headers.
 - A draft is invisible to `wiki/index.md`, `wiki/log.md`, and `content-lint`'s
   orphan check by design — this is expected, not a gap to "fix" during promotion.
+- An archived item is the opposite: it stays indexed (under `## Archived`) and
+  logged. Never delete content to retire it — archive it.

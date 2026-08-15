@@ -59,7 +59,7 @@ Then open your agent in the project and use the skills:
 | Skill | Purpose |
 |---|---|
 | `content-new` | Start a new topic in `docs/` |
-| `content-new-item` | Add a content item to a topic; also handles work-in-progress drafts (`status: draft`) and promoting them later |
+| `content-manage-item` | Add a content item to a topic; also owns the item lifecycle — drafts (`status: draft`), promotion, and archiving (`status: archived`) |
 | `content-import` | Ingest PPTX/DOCX/PDF/text into `raw/` → `docs/` → `wiki/`; brownfield sweeps of whole folders |
 | `content-research` | Web-research a question and file the findings |
 | `content-query` | Answer a directed question over the whole knowledge base, cited |
@@ -140,7 +140,9 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
 - Codex and Copilot compatibility (AGENTS.md generation)
 - Scaffold diffing for `agentic-cms update` — it currently re-runs the
   non-destructive `init` (adds new files, never touches existing ones); it
-  can't yet offer to update scaffold files whose *content* changed upstream
+  can't yet offer to update scaffold files whose *content* changed upstream,
+  nor clean up renamed ones (upgraded installs keep the stale
+  `content-new-item/` skill dir alongside its replacement `content-manage-item/`)
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
 - macOS/Windows targets (the update mechanism is already platform-general;
   only the release build matrix needs to grow)

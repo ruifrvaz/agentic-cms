@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-16
+
 ### Added
 
-- **Archive content state** (pending v0.3.0 · PR #3) — adds `status: archived` and a `docs/<topic>/archive/` convention mirroring drafts, for retired content that stays retrievable; `ac-page` gained an `archive` subcommand (sibling of `promote`), archived items stay in `wiki/index.md` under a new `## Archived` section (`ac-index` auto-creates it on older indexes), `ac-inventory` reports `archived` per topic, and `content-list`/`content-lint` treat archived pages as retired rather than drifted.
+- **Archive content state** — adds `status: archived` and a `docs/<topic>/archive/` convention mirroring drafts, for retired content that stays retrievable; `ac-page` gained an `archive` subcommand (sibling of `promote`), archived items stay in `wiki/index.md` under a new `## Archived` section (`ac-index` auto-creates it on older indexes), `ac-inventory` reports `archived` per topic, and `content-list`/`content-lint` treat archived pages as retired rather than drifted.
 
 ### Changed
 
-- **`content-new-item` renamed to `content-manage-item`** (pending v0.3.0 · PR #3) — the skill now owns the full item lifecycle (create, draft, promote, archive); upgraded installs keep the stale `content-new-item/` skill directory until `agentic-cms update` learns scaffold diffing/renames.
+- **`content-new-item` renamed to `content-manage-item`** — the skill now owns the full item lifecycle (create, draft, promote, archive); upgraded installs keep the stale `content-new-item/` skill directory until `agentic-cms update` learns scaffold diffing/renames.
 
 ## [0.2.0] - 2026-08-15
 
