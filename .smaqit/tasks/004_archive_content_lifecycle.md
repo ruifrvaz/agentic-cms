@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-08-15"
 mode: Assisted
 started: "2026-08-15"
-pr: 3
+completed: "2026-08-16"
 ---
 
 # Archive content lifecycle
