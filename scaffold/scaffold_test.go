@@ -28,7 +28,7 @@ var wantFiles = []string{
 	".agentic-cms/templates/source.md",
 	".agentic-cms/templates/topic.md",
 	".claude/skills/content-new/SKILL.md",
-	".claude/skills/content-new-item/SKILL.md",
+	".claude/skills/content-manage-item/SKILL.md",
 	".claude/skills/content-query/SKILL.md",
 	".claude/skills/content-research/SKILL.md",
 	".claude/skills/content-import/SKILL.md",

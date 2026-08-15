@@ -24,6 +24,13 @@ for path in sorted(glob.glob("docs/*/drafts/*.md")):
     drafts.setdefault(topic, []).append(os.path.basename(path))
 drafts = {t: {"count": len(files), "files": sorted(files)} for t, files in drafts.items()}
 
+# Retired items (status: archived) — still indexed, under the Archived section.
+archived = {}
+for path in sorted(glob.glob("docs/*/archive/*.md")):
+    topic = path.split(os.sep)[1]
+    archived.setdefault(topic, []).append(os.path.basename(path))
+archived = {t: {"count": len(files), "files": sorted(files)} for t, files in archived.items()}
+
 wiki = {cat: sorted(os.path.basename(p) for p in glob.glob(f"wiki/{cat}/*.md"))
         for cat in ("entities", "concepts", "sources")}
 
@@ -47,6 +54,7 @@ if os.path.isfile("wiki/log.md"):
 print(json.dumps({"ok": True,
                   "topics": topics,
                   "drafts": drafts,
+                  "archived": archived,
                   "wiki": {k: {"count": len(v), "files": v} for k, v in wiki.items()},
                   "raw_uningested": uningested,
                   "recent_log": log_entries[-5:]}))

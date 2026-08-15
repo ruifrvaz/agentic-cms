@@ -45,4 +45,4 @@ return JSON — check `"ok"` after every call (contract: `.agentic-cms/bin/READM
 ## Rules
 
 - Greenfield-friendly: if `docs/` is empty this is likely the project's first topic.
-- Never create empty placeholder items — items are added via `content-new-item`.
+- Never create empty placeholder items — items are added via `content-manage-item`.

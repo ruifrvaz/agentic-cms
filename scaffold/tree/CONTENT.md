@@ -35,6 +35,7 @@ docs/                 organized topical documentation
   <topic>/            one folder per topic
     <item>.md         one file per content item
     drafts/           optional: work-in-progress items (status: draft)
+    archive/          optional: retired items (status: archived)
 wiki/
   index.md            catalog of every page: link + one-line summary, by category
   log.md              append-only journal of operations
@@ -79,7 +80,7 @@ synthesis, wording — stays with the agent. Full contract:
   updated: YYYY-MM-DD
   sources: [raw/file.pdf]   # raw sources this page draws on
   refs: [wiki/concepts/x.md]# pages this page depends on
-  status: final             # `draft` while work-in-progress; `final` once ready
+  status: final             # draft | final (default) | archived
   ---
   ```
 
@@ -93,8 +94,22 @@ synthesis, wording — stays with the agent. Full contract:
   content subject to the normal wiki bookkeeping below. **Promotion**:
   `ac-page promote docs/<topic>/drafts/<item>.md docs/<topic>/<item>.md`
   moves the file, sets `status: final`, and touches `updated:` in one call;
-  then run the normal `content-new-item` register+log step (index entry, log
+  then run the normal `content-manage-item` register+log step (index entry, log
   entry) against the new path.
+- **Archive**: `status: archived` marks a first-class page as retired — no longer
+  active content, but kept retrievable (archive ≠ delete). Archived items live at
+  `docs/<topic>/archive/<item>.md`, the mirror of `drafts/`. Unlike a draft, an
+  archived page STAYS in `wiki/index.md`, re-filed under the `## Archived`
+  section, so `content-query` can still find it and knows it is retired.
+  **Archiving**: `ac-page archive docs/<topic>/<item>.md
+  docs/<topic>/archive/<item>.md` moves the file, sets `status: archived`, and
+  touches `updated:`; then re-file the index entry (`ac-index remove` +
+  `ac-index add archived`), append an `archive` log entry, fix any inbound
+  links from active pages (`ac-links check` flags them), and drop the item
+  from its topic `README.md` list. **Un-archiving** is `ac-page promote` from
+  `archive/` back up plus the reverse re-filing and an `unarchive` log entry.
+  `raw/` is never archived (it is immutable); `exports/` is never archived
+  (derived artifacts are regenerable).
 - **Cross-links**: use relative markdown links (`[X](../concepts/x.md)`). Obsidian-style
   `[[wikilinks]]` are acceptable if the user works in Obsidian; pick one per project
   and record the choice here.
@@ -105,14 +120,14 @@ synthesis, wording — stays with the agent. Full contract:
 - **log.md**: append-only. Every operation appends one entry with the header format
   `## [YYYY-MM-DD] <operation> | <subject>` so the log is greppable
   (`grep "^## \[" wiki/log.md | tail -5`). Operations: `init`, `new`, `new-item`,
-  `import`, `research`, `notes`, `lint`, `export`.
+  `import`, `research`, `notes`, `lint`, `export`, `archive`, `unarchive`.
 - **Contradictions**: when new material contradicts an existing page, do not silently
   overwrite. Note the contradiction inline (`> ⚠ Contradicts [X](...) — newer source
   says ...`), update if the newer source is authoritative, and log it.
 
 ## Operations
 
-**Ingest** (skills: `content-import`, `content-new-item`, `content-add-notes`):
+**Ingest** (skills: `content-import`, `content-manage-item`, `content-add-notes`):
 new material lands in `raw/`, is converted/summarized into `docs/`, and its key
 information is integrated into the wiki — source summary page created, relevant
 entity/concept pages updated, index updated, log appended. One source may touch
