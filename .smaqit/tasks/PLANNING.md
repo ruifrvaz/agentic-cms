@@ -4,7 +4,7 @@
 
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
-| 002 | Draft content state | In Progress | Adds `status: draft` frontmatter + `docs/<topic>/drafts/` convention; ad-hoc equivalent already applied in a downstream installed project pending this |
+| 002 | Draft content state | PR Open (#2) | Adds `status: draft` frontmatter + `docs/<topic>/drafts/` convention; ad-hoc equivalent already applied in a downstream installed project pending this |
 
 ## Completed
 

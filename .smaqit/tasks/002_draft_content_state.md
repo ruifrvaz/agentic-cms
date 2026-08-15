@@ -1,6 +1,7 @@
 # Draft content state
 
-**Status:** In Progress
+**Status:** PR Open
+**PR:** #2
 **Mode:** Assisted
 **Created:** 2026-08-14
 **Started:** 2026-08-15
@@ -121,18 +122,60 @@ issue search is not applicable.
 
 ## Acceptance Criteria
 
-- [ ] `CONTENT.md` documents `status: draft | final` (default `final`) and
+- [x] `CONTENT.md` documents `status: draft | final` (default `final`) and
       the `docs/<topic>/drafts/` convention, including the promotion flow
-- [ ] `doc.md` template shows the optional `status:` field
-- [ ] `ac-index check` excludes `docs/*/drafts/*.md` from `unindexed_pages`
-- [ ] `ac-inventory` reports draft pages (path + topic)
-- [ ] `content-new-item` supports creating a draft (no wiki wiring) and
+- [x] `doc.md` template shows the optional `status:` field
+- [x] `ac-index check` excludes `docs/*/drafts/*.md` from `unindexed_pages`
+- [x] `ac-inventory` reports draft pages (path + topic)
+- [x] `content-new-item` supports creating a draft (no wiki wiring) and
       promoting an existing draft to first-class content
-- [ ] `content-lint` does not flag drafts as orphans or stale content
+- [x] `content-lint` does not flag drafts as orphans or stale content
       (verify this holds once `ac-index` is fixed — expected by
       construction, not a separate content-lint code change)
-- [ ] `content-list` reports drafts separately from first-class content
-- [ ] `make smoke-test` and `go test ./...` remain unaffected and passing
+- [x] `content-list` reports drafts separately from first-class content
+- [x] `make smoke-test` and `go test ./...` remain unaffected and passing
+
+## Findings
+
+**Implementation approach:**
+- `status:` shipped as a live, first-class frontmatter field (`status: final`
+  default in `doc.md`, substituted via a new `{{STATUS}}` placeholder) rather
+  than the originally-planned commented-out example — see Decisions.
+- `ac-page` gained `--status draft|final` on `new` (validated, defaults to
+  `final`) and a new `promote <src> <dest>` subcommand (refuse-on-conflict,
+  moves the file, sets `status: final`, touches `updated:`) so both draft
+  creation and promotion are one deterministic toolkit call each, with no
+  hand-editing of frontmatter.
+- `ac-index check`'s `unindexed_pages` glob excludes `docs/*/drafts/*.md`;
+  `ac-inventory` gained a per-topic `drafts` field. `content-lint` needed no
+  functional change — its orphan check only walks `ac-index list`, which
+  never contains drafts by construction.
+- `content-new-item` restructured into New item / Draft / Promote modes,
+  mirroring `content-import`'s existing two-modes pattern.
+
+**Decisions made:**
+- Extend `content-new-item` rather than add a new skill (matches the task's
+  original lean; confirmed during planning).
+- `status:` is a live template field, not a commented example as originally
+  planned — the commented-example rationale ("untouched installs don't
+  silently gain the field") doesn't actually hold: `init`/`update` never
+  overwrite an existing template file regardless, so there was no real
+  migration risk to avoid. Live keeps it consistent with every other
+  frontmatter field and matches `CONTENT.md`'s own rule that mechanical
+  operations belong in the toolkit, not hand-edited — which is also why
+  `ac-page` gained `--status`/`promote` instead of the originally-planned
+  manual frontmatter edits during Draft/Promote. Both changes were raised by
+  the user during review and implemented after confirmation.
+- Promotion refuses on a destination conflict (mirrors `ac-page new`'s
+  existing refuse-overwrite behavior) rather than attempting a merge.
+- `ac-links check` needs no change — checking links *from* drafts is
+  desirable, not a false positive.
+
+**Blockers encountered:**
+- None.
+
+**Follow-up identified:**
+- None beyond what's already in `CONTENT.md`/README's existing roadmap notes.
 
 ## Notes
 
