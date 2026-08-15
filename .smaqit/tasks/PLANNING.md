@@ -5,7 +5,7 @@
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
 | 003 | Register mode for reference files | Not Started | Lightweight `content-import` Register mode: wiki/sources sidecar + index + log for archival/reference files (e.g. invoices), no markdown conversion; start after 002 merges |
-| 004 | Archive content lifecycle | In Progress | `status: archived` + `docs/<topic>/archive/` mirroring 002's drafts; `ac-page archive`, index re-filed under archived section |
+| 004 | Archive content lifecycle | PR Open (#3) | `status: archived` + `docs/<topic>/archive/` mirroring 002's drafts; `ac-page archive`, index re-filed under archived section; also renames content-new-item → content-manage-item |
 
 ## Completed
 

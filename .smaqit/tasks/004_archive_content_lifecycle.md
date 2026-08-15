@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-08-15"
 mode: Assisted
 started: "2026-08-15"
+pr: 3
 ---
 
 # Archive content lifecycle
@@ -65,6 +66,13 @@ and the transition is logged.
 - **Skill surface: an Archive mode on `content-new-item`**, mirroring
   Promote in reverse — keeps the nine-skill footprint, same modes pattern
   as 002.
+- **Skill renamed `content-new-item` → `content-manage-item`** (user
+  decision during implementation): with Draft/Promote/Archive modes the old
+  name became misleading — the skill owns create + the item lifecycle, not
+  just creation. All cross-references updated (root README, CONTENT.md,
+  content-new, content-list, content-add-notes, scaffold_test.go). Upgraded
+  installs keep a stale `content-new-item/` skill dir until `update` learns
+  scaffold diffing/renames — recorded in the root README roadmap.
 
 ## Implementation Steps
 
@@ -119,34 +127,61 @@ dependency is introduced or at risk. GitHub issue search is not applicable.
 
 ## Acceptance Criteria
 
-- [ ] `CONTENT.md` documents `status: archived`, `docs/<topic>/archive/`,
+- [x] `CONTENT.md` documents `status: archived`, `docs/<topic>/archive/`,
       archive/un-archive flows, and the new log operations
-- [ ] `ac-page archive` moves a page, sets `status: archived`, touches
+- [x] `ac-page archive` moves a page, sets `status: archived`, touches
       `updated:`, and refuses on destination conflict
-- [ ] Archived items remain in `wiki/index.md` under an archived section;
+- [x] Archived items remain in `wiki/index.md` under an archived section;
       `ac-index check` stays clean with no new exclusion glob
-- [ ] `ac-inventory` reports archived pages per topic
-- [ ] `content-new-item` has an Archive mode including index re-filing, log
-      entry, and inbound-link cleanup; un-archive documented via Promote
-- [ ] `content-list` reports archived items separately
-- [ ] `content-lint` exempts archived pages from orphan detection
-- [ ] `make smoke-test` and `go test ./...` remain passing
+- [x] `ac-inventory` reports archived pages per topic
+- [x] `content-manage-item` (renamed from `content-new-item`) has an Archive
+      mode including index re-filing, log entry, and inbound-link cleanup;
+      un-archive documented via Promote; all cross-references use the new name
+- [x] `content-list` reports archived items separately
+- [x] `content-lint` exempts archived pages from orphan detection
+- [x] `make smoke-test` and `go test ./...` remain passing
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Mirrored task 002's drafts pattern throughout: `docs/<topic>/archive/` as
+  the structural mirror of `drafts/`, `archived` inventory field shaped like
+  `drafts`, Archive mode added to the same lifecycle skill
+- `ac-page archive` implemented as a sibling of `promote` on one shared
+  move-with-status code path (move, set status, touch updated, refuse on
+  destination conflict)
+- Verified end-to-end in a sandbox install: archive, re-file, both checks
+  clean, inventory reporting, un-archive, header auto-create, and
+  status-field insertion all exercised against a real `init` scaffold
 
 **Decisions made:**
-- TBD
+- Archived items stay in `wiki/index.md`, re-filed under `## Archived` —
+  unlike drafts — because the index is the retrieval system and archive is
+  not delete; no new `ac-index check` exclusion needed as a result
+- `ac-index add` auto-creates a known section header missing from an older
+  `index.md` (init never rewrites existing files, so upgraded installs would
+  otherwise hard-fail on first archive); fresh installs ship the section
+- Archiving a page whose frontmatter lacks `status:` inserts the field
+  explicitly — absent status means final, so an archived page must carry it
+- Skill renamed `content-new-item` → `content-manage-item` (user decision):
+  it owns create + the draft/promote/archive lifecycle, not just creation
+- `content-lint` also skips archived pages in the stale-claims check, not
+  only the orphan check — retired content is not expected to stay current
 
 **Blockers encountered:**
-- TBD
+- Task files were created in the template's legacy bold-header format, which
+  the lifecycle resolver rejects — converted 003/004 to YAML frontmatter
+- Metadata push to origin/main failed with a persistent 403 (fine-grained
+  PAT lacked write access); resolved by the user updating the token
 
 **Follow-up identified:**
-- TBD
+- `agentic-cms update` cannot clean up renamed scaffold paths: upgraded
+  installs keep a stale `content-new-item/` skill dir alongside
+  `content-manage-item/` until scaffold diffing lands (recorded in roadmap)
+- Task files 001/002 remain in legacy format and produce resolver warnings;
+  converting them would silence the noise
+- Whole-topic archiving deliberately out of scope; revisit if per-item
+  archiving proves insufficient
 
 ## Files to Create / Modify
 
@@ -157,7 +192,7 @@ dependency is introduced or at risk. GitHub issue search is not applicable.
 | scaffold/tree/.agentic-cms/bin/ac-index | Modify (only if archived section isn't already generic) |
 | scaffold/tree/.agentic-cms/bin/ac-inventory | Modify |
 | scaffold/tree/.agentic-cms/bin/README.md | Modify |
-| scaffold/tree/.claude/skills/content-new-item/SKILL.md | Modify |
+| scaffold/tree/.claude/skills/content-manage-item/SKILL.md | Rename from content-new-item + Modify |
 | scaffold/tree/.claude/skills/content-list/SKILL.md | Modify |
 | scaffold/tree/.claude/skills/content-lint/SKILL.md | Modify |
 
