@@ -32,3 +32,14 @@ version: "1.1.0"
 | Python 3 | glob module | https://docs.python.org/3/library/glob.html |
 | Python 3 | re module | https://docs.python.org/3/library/re.html |
 | Bash | Manual | https://www.gnu.org/software/bash/manual/bash.html |
+
+## Task 004 — Archive content lifecycle
+
+**Context fingerprint:** sha256:baad176b8229a346918f7bd6f7420870bbaf5eaf15be893ea0765a587b85a776
+**Refreshed:** 2026-08-15
+
+| Tool | Section | URL |
+|------|---------|-----|
+| Python 3 | re module | https://docs.python.org/3/library/re.html |
+| Python 3 | glob module | https://docs.python.org/3/library/glob.html |
+| Bash | Manual | https://www.gnu.org/software/bash/manual/bash.html |

@@ -3,6 +3,10 @@
     {
       "name": "main",
       "path": "."
+    },
+    {
+      "name": "task/004-archive-content-lifecycle",
+      "path": "../agentic-cms-wt-task-004-archive-content-lifecycle"
     }
   ],
   "settings": {
