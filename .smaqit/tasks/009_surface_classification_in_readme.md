@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-08-18"
 mode: Assisted
 started: "2026-08-18"
+pr: 7
 ---
 
 # Surface classification feature in README
@@ -77,31 +78,46 @@ Triage skipped — explicitly marked `Skip` in task Issue Triage Context
 
 ## Acceptance Criteria
 
-- [ ] README's Features section has a headline bullet mentioning
+- [x] README's Features section has a headline bullet mentioning
       classification and the CIA triad
-- [ ] A dedicated `## Classification` section explains the C0-C3 levels
+- [x] A dedicated `## Classification` section explains the C0-C3 levels
       (with examples) and why enforcement matters for agent-driven content
       synthesis
-- [ ] Content is accurate against `scaffold/tree/CONTENT.md`'s
+- [x] Content is accurate against `scaffold/tree/CONTENT.md`'s
       Classification rubric (ratchet-up-only, bleed rule, floor-only
       detector)
-- [ ] `make smoke-test` and `go test ./...` remain passing
+- [x] `make smoke-test` and `go test ./...` remain passing
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Replaced the "One detector, many thin callers" Features bullet with a
+  headline "Confidentiality-aware by design" bullet naming the CIA triad
+  and linking to `#classification`.
+- Added a new `## Classification` section after "How it works": a C0-C3
+  table (levels, meanings, examples matching `CONTENT.md` verbatim), a
+  "Why it matters" paragraph, and the enforcement-mechanics paragraph
+  (moved down from the old Features bullet, wording unchanged).
 
 **Decisions made:**
-- TBD
+- "Why it matters" is grounded in the general mechanism (agent-driven
+  synthesis across `raw/` into a compounding, cross-linked `wiki/` can
+  silently propagate sensitive detail into summaries/exports), not this
+  repo's own internal incident history — not appropriate content for a
+  public README.
+- Kept the C0-C3 table and enforcement-mechanics detail rather than
+  cutting it for brevity — still accurate and useful for readers who want
+  the mechanics, just relocated out of the Features section.
 
 **Blockers encountered:**
-- TBD
+- GitHub push access broke mid-task-start (403 on both a plain `git push`
+  and an explicit `gh`-credential-helper push, despite `gh api` reporting
+  full push/admin rights) — a known recurring pattern where this user's
+  managed PAT rotates/expires. Resolved by the user re-running their
+  token-refresh script; retried successfully.
 
 **Follow-up identified:**
-- TBD
+- None — task scoped to README only, fully delivered.
 
 ## Files to Create / Modify
 
