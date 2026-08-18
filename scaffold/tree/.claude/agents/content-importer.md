@@ -26,19 +26,19 @@ Workflow:
      (`pip install markitdown python-pptx --break-system-packages` or venv).
    - Create the page deterministically, then merge the cleaned conversion into it:
      ```sh
-     .agentic-cms/bin/ac-page new doc docs/<topic>/<item>.md --title "<T>" --topic <topic> --raw-path raw/<file>
-     .agentic-cms/bin/ac-page new source wiki/sources/<slug>.md --title "<T>" --raw-path raw/<file>
+     .agentic-cms/scripts/ac-page new doc docs/<topic>/<item>.md --title "<T>" --topic <topic> --raw-path raw/<file>
+     .agentic-cms/scripts/ac-page new source wiki/sources/<slug>.md --title "<T>" --raw-path raw/<file>
      ```
      Write summary/takeaways into the source page; set `sources:` frontmatter.
 4. **Integrate** with the toolkit (JSON out — check `"ok"` on every call; see
-   `.agentic-cms/bin/README.md`):
+   `.agentic-cms/scripts/README.md`):
    ```sh
-   .agentic-cms/bin/ac-index add topics|sources <path> "<summary>"   # every page created
-   .agentic-cms/bin/ac-page touch <path>                             # every page edited
-   .agentic-cms/bin/ac-log append import "<source>" "<pages touched>" # one per source
+   .agentic-cms/scripts/ac-index add topics|sources <path> "<summary>"   # every page created
+   .agentic-cms/scripts/ac-page touch <path>                             # every page edited
+   .agentic-cms/scripts/ac-log append import "<source>" "<pages touched>" # one per source
    ```
    Update entity/concept pages affected by the batch the same way. Finish with
-   `.agentic-cms/bin/ac-index check` and `.agentic-cms/bin/ac-links check` — both
+   `.agentic-cms/scripts/ac-index check` and `.agentic-cms/scripts/ac-links check` — both
    must report `"clean": true`.
 5. **Report back**: files imported, files skipped (and why), wiki pages touched,
    contradictions or duplicates found.

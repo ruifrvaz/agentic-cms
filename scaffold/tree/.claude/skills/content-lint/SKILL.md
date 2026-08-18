@@ -2,21 +2,21 @@
 name: content-lint
 description: Health-check the content base — contradictions, stale claims, orphan pages, missing cross-references, broken links, index/reality drift. Use for "lint the wiki", "check content health", or periodically after several ingests.
 license: MIT
-compatibility: Requires bash and python3 (uses the .agentic-cms/bin toolkit)
-allowed-tools: Read Edit Grep Glob Bash(.agentic-cms/bin/*)
+compatibility: Requires bash and python3 (uses the .agentic-cms/scripts toolkit)
+allowed-tools: Read Edit Grep Glob Bash(.agentic-cms/scripts/*)
 ---
 
 # content-lint — health check
 
 Read `CONTENT.md` at the project root first if you haven't this session. Toolkit
-contract: `.agentic-cms/bin/README.md`.
+contract: `.agentic-cms/scripts/README.md`.
 
 ## Phase 1 — mechanical (deterministic, fix directly)
 
 ```sh
-.agentic-cms/bin/ac-links check     # broken links → fix each, ac-page touch the file
-.agentic-cms/bin/ac-index check     # drift → ac-index remove / ac-index add per finding
-.agentic-cms/bin/ac-inventory       # raw_uningested → report as import candidates
+.agentic-cms/scripts/ac-links check     # broken links → fix each, ac-page touch the file
+.agentic-cms/scripts/ac-index check     # drift → ac-index remove / ac-index add per finding
+.agentic-cms/scripts/ac-inventory       # raw_uningested → report as import candidates
 ```
 
 Also verify frontmatter integrity: `ac-page meta` on any page you touch; fix
@@ -48,7 +48,7 @@ Re-run `ac-links check` and `ac-index check` after fixing — both must report
 ## Wrap up
 
 ```sh
-.agentic-cms/bin/ac-log append lint "<n> fixed, <m> flagged" "<summary of findings>"
+.agentic-cms/scripts/ac-log append lint "<n> fixed, <m> flagged" "<summary of findings>"
 ```
 
 Report: fixed / candidates / content-level findings, each with file paths.

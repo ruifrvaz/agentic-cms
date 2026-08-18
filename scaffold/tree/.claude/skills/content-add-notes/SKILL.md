@@ -2,21 +2,21 @@
 name: content-add-notes
 description: Add notes, observations, or updates to an existing content item. Use when the user wants to annotate a page — "add a note to X", "append this to Y", "note that Z changed".
 license: MIT
-compatibility: Requires bash and python3 (uses the .agentic-cms/bin toolkit)
-allowed-tools: Read Edit Grep Glob Bash(.agentic-cms/bin/*)
+compatibility: Requires bash and python3 (uses the .agentic-cms/scripts toolkit)
+allowed-tools: Read Edit Grep Glob Bash(.agentic-cms/scripts/*)
 ---
 
 # content-add-notes — annotate existing content
 
 Read `CONTENT.md` at the project root first if you haven't this session. Toolkit
-contract: `.agentic-cms/bin/README.md`.
+contract: `.agentic-cms/scripts/README.md`.
 
 ## Steps
 
 1. **Find the item** (deterministic):
    ```sh
-   .agentic-cms/bin/ac-search <subject terms>
-   .agentic-cms/bin/ac-index list
+   .agentic-cms/scripts/ac-search <subject terms>
+   .agentic-cms/scripts/ac-index list
    ```
    If no page exists, offer `content-manage-item` instead.
 2. **Append** under the page's `## Notes` section (create the section if missing):
@@ -32,8 +32,8 @@ contract: `.agentic-cms/bin/README.md`.
    superseded claims — a contradicting note must not just sit at the bottom.
 4. **Touch and log** (deterministic):
    ```sh
-   .agentic-cms/bin/ac-page touch <file>          # every file you edited
-   .agentic-cms/bin/ac-log append notes "<page>"
+   .agentic-cms/scripts/ac-page touch <file>          # every file you edited
+   .agentic-cms/scripts/ac-log append notes "<page>"
    ```
 
 ## Rules
