@@ -87,6 +87,17 @@ If private-repo distribution is ever needed, the fix isn't GitHub Packages — a
 
 ---
 
+**Does `agentic-cms init`/`update` refresh scaffolding files that already exist on disk, or does it skip them?**
+
+It depends which kind of file. `scaffold.Install()` in `scaffold/embed.go` splits every installed path into two buckets:
+
+- **Framework-owned scaffolding logic** — `.claude/skills/`, `.claude/agents/`, `.agentic-cms/templates/`, `.agentic-cms/scripts/`, `.agentic-cms/hooks/`, `.codex/` — is always overwritten with the version embedded in the currently installed CLI, even if the on-disk copy was locally edited. There is no drift or checksum check; the local edit is simply replaced. Overwritten files are reported under a distinct `updated` line in `agentic-cms init`'s output (and the summary's `updated` count), never as `skipped`.
+- **User-owned content** — `wiki/`, `raw/`, `CONTENT.md`, `docs/`, `.agentic-cms/VERSION` — is skip-if-exists: a re-run never touches it. `CLAUDE.md` is a special case — if it exists without the agentic-cms managed block, the block is appended (reported as `merged`); if the block is already present, the file is left alone (`skipped`).
+
+`.claude/settings.json` is treated as user-configurable and is skip-if-exists, not framework-owned, since it's meant to be edited by the project owner rather than tracked upstream.
+
+---
+
 ## Tooling
 
 **Why do `.agents/`, `.claude/`, `.codex/`, `.github/agents/`, or `.github/skills/` sometimes reappear in this project after being deleted?**
