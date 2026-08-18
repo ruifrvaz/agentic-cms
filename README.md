@@ -6,9 +6,28 @@ thin scaffolding on top of any project folder; from then on, your coding agent
 does the content work: importing raw documents, organizing them into a
 structured knowledge base, researching gaps, and exporting deliverables.
 
-Heavily inspired by [Andrej Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f):
-an agent-maintained, compounding wiki that sits between you and your raw sources.
-Knowledge is compiled once and kept current — not re-derived on every question.
+## Compatibility
+
+Currently supported:
+
+| Platform | Status |
+|----------|--------|
+| Claude Code | ✅ Supported |
+| GitHub Copilot | Planned |
+| OpenAI Codex | Planned |
+
+## Getting Started
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ruifrvaz/agentic-cms/main/install.sh | bash
+```
+
+**Initialize:**
+
+```sh
+cd your-project
+agentic-cms init
+```
 
 ## Features
 
@@ -79,34 +98,7 @@ writes, ratings only ever ratchet **up** (only you can lower one), and
 `wiki/index.md`/`wiki/log.md` entries for C2+ pages are restricted to
 opaque summaries — no figures, no names, no quoted content.
 
-**One detector, many thin callers.** All of this is enforced by a single
-`ac-classify` engine — pattern-matching for credential-shaped strings and
-PII/financial content as an authoritative *floor*, never a full rating —
-called from four points: an agent hook after every write, a git pre-commit
-gate, each write-path skill's own verify step, and `content-lint`'s health
-sweep. None of the four re-implements detection; they only differ in what
-they do with the result (block, warn, auto-fix, report).
-
-## Compatibility
-
-Currently supported:
-
-| Platform | Status |
-|----------|--------|
-| Claude Code | ✅ Supported |
-| GitHub Copilot | Planned |
-| OpenAI Codex | Planned |
-
-## Getting Started
-
-**Prerequisite:** none — the `curl | bash` install needs no Go toolchain. Linux
-only for now.
-
-**Install:**
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/ruifrvaz/agentic-cms/main/install.sh | bash
-```
+## For developers
 
 Downloads the latest release binary into `~/.local/bin`. Pin a version with
 `AGENTIC_CMS_VERSION=vX.Y.Z`.
@@ -117,13 +109,6 @@ For Go users or contributors building from source:
 go install github.com/ruifrvaz/agentic-cms@latest
 # or from a clone:
 make build && sudo make install
-```
-
-**Initialize:**
-
-```sh
-cd your-project
-agentic-cms init
 ```
 
 **Build something:**
@@ -205,19 +190,6 @@ the agent when importing/exporting — the scaffold itself is pure markdown.
   into your project; read the installed copy first
 - **[CHANGELOG.md](CHANGELOG.md)** — release history
 
-## Repository layout
-
-```
-install.sh         curl | bash bootstrap: downloads the latest release binary
-                   into ~/.local/bin, no Go toolchain required
-main.go            CLI (init, update, version, help)
-update.go          self-update: fetch latest GitHub release, replace the
-                   binary, re-run init in the project directory
-scaffold/embed.go  go:embed + non-destructive installer
-scaffold/tree/     the scaffolding that gets installed (edit this to change
-                   what ships; `all:` embed includes the dot-directories)
-```
-
 ## Development
 
 ```sh
@@ -247,6 +219,11 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
   nor clean up renamed ones (upgraded installs keep the stale
   `content-new-item/` skill dir alongside its replacement `content-manage-item/`)
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
+
+## Brief mention
+
+Heavily inspired by [Andrej Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f):
+an agent-maintained, compounding wiki that sits between you and your raw sources.
 
 ## License
 
