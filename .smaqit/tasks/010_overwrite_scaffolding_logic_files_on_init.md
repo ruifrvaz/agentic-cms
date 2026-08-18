@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-08-18"
 mode: Assisted
 started: "2026-08-19"
-pr: 8
+completed: "2026-08-19"
 ---
 
 # Always overwrite scaffolding logic files on init/update
