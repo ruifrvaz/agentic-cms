@@ -3,6 +3,14 @@
     {
       "name": "main",
       "path": "."
+    },
+    {
+      "name": "task/005-first-class-content-classification-auto-cia-rating",
+      "path": "../agentic-cms-wt-task-005-first-class-content-classification-auto-cia-rating"
+    },
+    {
+      "name": "task/006-shell-installer-bootstrap-no-go-dependency",
+      "path": "../agentic-cms-wt-task-006-shell-installer-bootstrap-no-go-dependency"
     }
   ],
   "settings": {
