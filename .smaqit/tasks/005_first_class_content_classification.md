@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-08-16"
 mode: Assisted
 started: "2026-08-18"
+pr: 5
 ---
 
 # First-class content classification (auto CIA rating)
@@ -265,33 +266,76 @@ instruments, anything credential-adjacent).
 
 ## Acceptance Criteria
 
-- [ ] `CONTENT.md` defines the C0–C3 scale, the auto-rating rubric, the index/log bleed rule for C2+, and the ratchet rule (agent may raise, only user may lower)
-- [ ] All five templates carry a live `classification:` field; absent field means C1 (back-compat, no migration required for installed projects)
-- [ ] `ac-page` validates `--classification` on `new` and supports `classify` for re-rating; both stamp `classified-hash`; `ac-inventory` reports per-page classification and distribution
-- [ ] `ac-classify check`/`sweep` detects invalid values, stale ratings (hash mismatch), and heuristic floor violations; floors only ever raise, never lower
-- [ ] Post-tool-use hooks ship for Claude Code and Codex (`.claude/settings.json`, `.codex/hooks.json`) through one `ac-classify hook` adapter that auto-detects the payload shape, auto-applies floor bumps, and returns stale ratings as blocking feedback; brownfield installs never overwrite an existing single-file config (snippet reported for manual merge); Copilot's config is explicitly not built in this task
-- [ ] Git pre-commit gate checks staged `docs/`/`wiki/` blobs — blocks floor violations and C2+ index/log bleed, warns on stale/unrated; `init` installs it non-destructively (fresh install, managed append to an existing hook, report-only under `core.hooksPath`)
-- [ ] Write-path skills (content-manage-item, content-import, content-add-notes, content-research) rate before writing and pass the rating through `ac-page`; content-add-notes re-rates on update; verify tails include `ac-classify check`
-- [ ] `content-lint` runs `ac-classify sweep` — invalid values, unrated pages (advisory), stale ratings, floor violations, and C2+ index/log leakage
-- [ ] `content-list` surfaces classification distribution
-- [ ] **No integration point re-implements detection: code review confirms the skill-tail check, both agent hooks, the pre-commit gate, and the lint sweep each call `ac-classify` rather than containing their own floor-pattern or staleness logic**
-- [ ] `make smoke-test` and `go test ./...` remain passing
+- [x] `CONTENT.md` defines the C0–C3 scale, the auto-rating rubric, the index/log bleed rule for C2+, and the ratchet rule (agent may raise, only user may lower)
+- [x] All five templates carry a live `classification:` field; absent field means C1 (back-compat, no migration required for installed projects)
+- [x] `ac-page` validates `--classification` on `new` and supports `classify` for re-rating; both stamp `classified-hash`; `ac-inventory` reports per-page classification and distribution
+- [x] `ac-classify check`/`sweep` detects invalid values, stale ratings (hash mismatch), and heuristic floor violations; floors only ever raise, never lower
+- [x] Post-tool-use hooks ship for Claude Code and Codex (`.claude/settings.json`, `.codex/hooks.json`) through one `ac-classify hook` adapter that auto-detects the payload shape, auto-applies floor bumps, and returns stale ratings as blocking feedback; brownfield installs never overwrite an existing single-file config (snippet reported for manual merge); Copilot's config is explicitly not built in this task
+- [x] Git pre-commit gate checks staged `docs/`/`wiki/` blobs — blocks floor violations and C2+ index/log bleed, warns on stale/unrated; `init` installs it non-destructively (fresh install, managed append to an existing hook, report-only under `core.hooksPath`)
+- [x] Write-path skills (content-manage-item, content-import, content-add-notes, content-research) rate before writing and pass the rating through `ac-page`; content-add-notes re-rates on update; verify tails include `ac-classify check`
+- [x] `content-lint` runs `ac-classify sweep` — invalid values, unrated pages (advisory), stale ratings, floor violations, and C2+ index/log leakage
+- [x] `content-list` surfaces classification distribution
+- [x] **No integration point re-implements detection: code review confirms the skill-tail check, both agent hooks, the pre-commit gate, and the lint sweep each call `ac-classify` rather than containing their own floor-pattern or staleness logic**
+- [x] `make smoke-test` and `go test ./...` remain passing
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Built `ac-classify` (check/sweep/hook) first as the single detection
+  engine, then wired every integration point — skill verify tails, both
+  agent hooks, the git pre-commit gate, content-lint — as thin callers
+  around it, verified at the end by grepping all four for any inline
+  regex/hash logic
+- Pre-commit gate materializes the staged tree via `git checkout-index`
+  and runs the same `ac-classify sweep` against it, rather than
+  reimplementing a staged-vs-working-tree diff itself
+- Reconciled the entire implementation against task 007's
+  `.agentic-cms/bin` → `.agentic-cms/scripts` rename via `git mv` + a
+  literal-string sweep, then `git reset --soft origin/main` (not
+  rebase/stash) so the branch pointer moved without invoking git's
+  rename-detection heuristics — zero merge conflicts
 
 **Decisions made:**
-- TBD
+- Mid-task SRP/KISS review (user-initiated) reshaped the design: agent
+  hooks scoped to Claude Code + Codex only (Copilot deferred, no
+  documented blocking capability), and an explicit acceptance criterion
+  added requiring no integration point to duplicate detection logic
+- `ac-inventory` gained a lightweight classification tally, separate from
+  `ac-classify sweep`'s heavier audit — `content-list` reads the former,
+  `content-lint` runs the latter, keeping "cheap count" and "expensive
+  detection" as distinct concerns
 
 **Blockers encountered:**
-- TBD
+- `ac-classify hook`'s stdin was silently empty on first test: the
+  `python3 - <<'PYEOF'` heredoc pattern consumes stdin as the script's
+  own source, so the piped platform payload never reached the script.
+  Fixed by capturing stdin into a bash variable before the heredoc
+- Installer shipped `.agentic-cms/hooks/pre-commit` non-executable — the
+  executable-mode check only covered `.agentic-cms/bin/`, so the
+  installed hook silently no-op'd via its own `[ -x ]` guard
+- Smoke-test sandboxes live inside this repo, so git's upward repo
+  discovery found this repo's own `.git/hooks/pre-commit` and the
+  installer correctly-but-unwantedly wired the classification gate into
+  it — a real side effect on the dev repo from running tests. Fixed via
+  `GIT_CEILING_DIRECTORIES` scoped to the sandbox root; verified the
+  accidentally-written hook was removed and stays absent on every rerun
+- Two rounds of "rename swept `.agentic-cms/bin` as a literal path but
+  missed `bin` as a standalone word" — `filepath.Join`'s split string
+  arguments in `scaffold_test.go` (both this task and task 007 hit this),
+  and a bare `bin/` line in README.md/CONTENT.md's tree diagrams that
+  predated any `.agentic-cms/` prefix — task 007's version of this bug
+  had already reached the released v0.4.0 changelog; fixed here as a
+  side effect of this task's own edits to those exact lines
 
 **Follow-up identified:**
-- TBD
+- Copilot CLI's hook config, deferred per the SRP review — revisit once
+  Copilot documents a block/feedback channel
+- Tier 2 migration (already-installed projects moving their own
+  `.agentic-cms/bin/` to `.agentic-cms/scripts/`) remains open, same gap
+  task 004 and 007 both left
+- Multi-instance segregation (vault repo, two-tier split) explicitly out
+  of scope per the original design — a follow-up task once the downstream
+  project's pattern settles
 
 ## Notes
 
