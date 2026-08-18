@@ -66,3 +66,13 @@ version: "1.1.0"
 | Claude Code | Hooks | https://code.claude.com/docs/en/hooks |
 | OpenAI Codex CLI | Hooks | https://learn.chatgpt.com/docs/hooks |
 | Git | githooks (pre-commit) | https://git-scm.com/docs/githooks |
+
+## Task 010 — Always overwrite scaffolding logic files on init/update
+
+**Context fingerprint:** sha256:925875800e344d9543f05bbd5e3134cfdb85c11900c71c94dac07231d9460364
+**Refreshed:** 2026-08-18
+
+| Tool | Section | URL |
+|------|---------|-----|
+| Go | Getting Started | https://go.dev/doc/tutorial/getting-started |
+| Go | embed package | https://pkg.go.dev/embed |

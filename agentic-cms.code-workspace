@@ -7,6 +7,10 @@
     {
       "name": "task/009-surface-classification-feature-in-readme",
       "path": "../agentic-cms-wt-task-009-surface-classification-feature-in-readme"
+    },
+    {
+      "name": "task/010-always-overwrite-scaffolding-logic-files-on-init-update",
+      "path": "../agentic-cms-wt-task-010-always-overwrite-scaffolding-logic-files-on-init-update"
     }
   ],
   "settings": {
