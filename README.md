@@ -81,10 +81,16 @@ your-project/
 ├── raw/                    ← immutable sources (+ assets/)
 ├── docs/                   ← organized topical markdown
 ├── wiki/                   ← index.md, log.md, entities/, concepts/, sources/
-├── .agentic-cms/           ← templates, installed version, deterministic bin/ toolkit
-└── .claude/
-    ├── skills/content-*/   ← the nine skills above
-    └── agents/             ← researcher, importer, exporter
+├── .agentic-cms/
+│   ├── scripts/            ← deterministic ac-* toolkit
+│   ├── hooks/pre-commit    ← classification gate; init wires it into .git/hooks/
+│   └── templates/          ← page templates
+├── .claude/
+│   ├── skills/content-*/   ← the nine skills above
+│   ├── agents/             ← researcher, importer, exporter
+│   └── settings.json       ← PostToolUse hook (classification check)
+└── .codex/
+    └── hooks.json          ← PostToolUse hook (classification check)
 ```
 
 Conversion tooling (pandoc, `markitdown`, `python-pptx`) is installed on demand by
@@ -134,10 +140,23 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
 - **Agent-agnostic core.** Skills/agents are markdown with YAML frontmatter;
   Codex/Copilot support means adding their config surface (e.g. `AGENTS.md`)
   around the same skill bodies.
+- **One detector, many thin callers.** Confidentiality classification
+  (`classification: C0-C3`) is enforced at four points — an agent hook
+  after every write, a git pre-commit gate, each write-path skill's
+  verify step, and `content-lint`'s health sweep — but all four are thin
+  wrappers around a single `ac-classify` engine. None re-implements
+  detection; they only differ in what they do with the result (block,
+  warn, auto-fix, report). Same principle as the rest of the toolkit,
+  applied to a case where the enforcement moment genuinely varies but the
+  logic must not.
 
 ## Roadmap
 
-- Codex and Copilot compatibility (AGENTS.md generation)
+- Codex and Copilot compatibility (AGENTS.md generation). Partial start:
+  Claude Code and Codex both get a classification-check hook today;
+  Copilot CLI's hook config is deferred (no documented blocking capability
+  as of this writing) — its skill-tail fallback still enforces classification
+  there, just without in-turn hook feedback.
 - Scaffold diffing for `agentic-cms update` — it currently re-runs the
   non-destructive `init` (adds new files, never touches existing ones); it
   can't yet offer to update scaffold files whose *content* changed upstream,

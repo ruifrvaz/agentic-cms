@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-18
+
 ### Added
 
-- **First-class content classification** (pending v0.5.0 · PR #5) — adds a `classification: C0 | C1 | C2 | C3` frontmatter field, rated by the agent at write time against a rubric in `CONTENT.md`. All detection (enum validity, `classified-hash` staleness, heuristic floor patterns) lives in one new `ac-classify` engine; every enforcement point — Claude Code/Codex agent hooks, a git pre-commit gate, write-path skill verify tails, and `content-lint`'s sweep — is a thin caller of it. `ac-page` gained `--classification`/`classify`; `ac-inventory` gained a distribution tally.
+- **First-class content classification** — adds a `classification: C0 | C1 | C2 | C3` frontmatter field, rated by the agent at write time against a rubric in `CONTENT.md`. All detection (enum validity, `classified-hash` staleness, heuristic floor patterns) lives in one new `ac-classify` engine; every enforcement point — Claude Code/Codex agent hooks, a git pre-commit gate, write-path skill verify tails, and `content-lint`'s sweep — is a thin caller of it. `ac-page` gained `--classification`/`classify`; `ac-inventory` gained a distribution tally.
 
 ## [0.4.0] - 2026-08-18
 

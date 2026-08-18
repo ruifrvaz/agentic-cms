@@ -24,12 +24,17 @@ Workflow:
      `markitdown` or `python-pptx` for PPTX (slide titles → headings, speaker notes
      → blockquotes), `pdftotext`/`markitdown` for PDF. Install tools as needed
      (`pip install markitdown python-pptx --break-system-packages` or venv).
-   - Create the page deterministically, then merge the cleaned conversion into it:
+   - Rate the file against `CONTENT.md`'s C0–C3 scale before creating its
+     page — a bulk sweep is exactly where financials or correspondence turn
+     up unexpectedly, so do not default every page to C1 without looking.
+     Create the page deterministically, then merge the cleaned conversion into it:
      ```sh
-     .agentic-cms/scripts/ac-page new doc docs/<topic>/<item>.md --title "<T>" --topic <topic> --raw-path raw/<file>
-     .agentic-cms/scripts/ac-page new source wiki/sources/<slug>.md --title "<T>" --raw-path raw/<file>
+     .agentic-cms/scripts/ac-page new doc docs/<topic>/<item>.md --title "<T>" --topic <topic> --raw-path raw/<file> --classification <C0|C1|C2|C3>
+     .agentic-cms/scripts/ac-page new source wiki/sources/<slug>.md --title "<T>" --raw-path raw/<file> --classification <C0|C1|C2|C3>
      ```
      Write summary/takeaways into the source page; set `sources:` frontmatter.
+     If a C2+ source, keep the summary opaque — no figures, no personal
+     details, no quoted content (the bleed rule).
 4. **Integrate** with the toolkit (JSON out — check `"ok"` on every call; see
    `.agentic-cms/scripts/README.md`):
    ```sh
@@ -38,8 +43,12 @@ Workflow:
    .agentic-cms/scripts/ac-log append import "<source>" "<pages touched>" # one per source
    ```
    Update entity/concept pages affected by the batch the same way. Finish with
-   `.agentic-cms/scripts/ac-index check` and `.agentic-cms/scripts/ac-links check` — both
-   must report `"clean": true`.
+   `.agentic-cms/scripts/ac-index check`, `.agentic-cms/scripts/ac-links check`, and
+   `.agentic-cms/scripts/ac-classify check <every page created or edited this
+   run>` — all three must report `"clean": true`. This check is not
+   optional: a subagent-mediated write is not guaranteed to trigger an
+   agent-lifecycle hook on every platform, so this is the guaranteed catch
+   for anything the hook missed.
 5. **Report back**: files imported, files skipped (and why), wiki pages touched,
    contradictions or duplicates found.
 

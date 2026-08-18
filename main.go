@@ -98,6 +98,9 @@ func runInit(dir string) error {
 	if err != nil {
 		return err
 	}
+	if err := scaffold.InstallGitHook(dir, res); err != nil {
+		return err
+	}
 	res.Print()
 
 	fmt.Println()

@@ -32,6 +32,17 @@ BINARY="$(cd "$(dirname "$BINARY")" && pwd)/$(basename "$BINARY")"
 SANDBOX_ROOT="$REPO_ROOT/.smoke-test"
 mkdir -p "$SANDBOX_ROOT"
 SANDBOX="$(mktemp -d "$SANDBOX_ROOT/run.XXXXXX")"
+
+# Nesting sandboxes inside this repo means a plain (non-git-initialized)
+# sandbox would otherwise be discovered by git as "inside" this repo's own
+# working tree (git walks up looking for a .git) — InstallGitHook would then
+# correctly-but-unwantedly wire its hook into THIS repo's real
+# .git/hooks/pre-commit. Capping discovery at SANDBOX_ROOT stops that: a
+# sandbox with no .git of its own is treated as outside any repository, while
+# a sandbox that explicitly runs `git init` (the 3b scenarios below) is still
+# found normally, since GIT_CEILING_DIRECTORIES only stops the upward walk,
+# never hides a repo at or below the ceiling itself.
+export GIT_CEILING_DIRECTORIES="$SANDBOX_ROOT"
 cleanup() {
     if [[ -n "${KEEP_SMOKE_DIR:-}" ]]; then
         echo "KEEP_SMOKE_DIR set — leaving sandbox at $SANDBOX"
@@ -148,6 +159,27 @@ links_out="$(.agentic-cms/scripts/ac-links check)"
 echo "    $links_out"
 assert_contains "$links_out" '"clean": true' "ac-links check reports clean"
 
+classify_out="$(.agentic-cms/scripts/ac-classify check docs/smoke/check.md)"
+echo "    $classify_out"
+assert_contains "$classify_out" '"clean": true' "ac-classify check reports clean on a freshly created C1 page"
+
+python3 -c "
+text = open('docs/smoke/check.md').read()
+text = text.replace('## Content', '## Content\n\napi_key: sk-abcdef1234567890abcdef')
+open('docs/smoke/check.md', 'w').write(text)
+"
+floor_out="$(.agentic-cms/scripts/ac-classify check docs/smoke/check.md)"
+echo "    $floor_out"
+assert_contains "$floor_out" '"floor_violation": true' "ac-classify check detects a credential-shaped floor violation"
+assert_contains "$floor_out" '"implied_level": "C3"' "ac-classify check implies C3 for a credential-shaped string"
+
+reclass_out="$(.agentic-cms/scripts/ac-page classify docs/smoke/check.md C3)"
+echo "    $reclass_out"
+assert_contains "$reclass_out" '"classification": "C3"' "ac-page classify raises the rating"
+clean_after_out="$(.agentic-cms/scripts/ac-classify check docs/smoke/check.md)"
+echo "    $clean_after_out"
+assert_contains "$clean_after_out" '"clean": true' "ac-classify check reports clean after re-rating to the implied floor"
+
 popd >/dev/null
 
 # --- 2. Idempotent re-run ---
@@ -183,6 +215,50 @@ if [[ "$marker_count" -eq 1 ]]; then
     pass "managed block not duplicated on re-init"
 else
     fail "managed block duplicated on re-init (found $marker_count begin markers)"
+fi
+
+# --- 3b. Git pre-commit hook: fresh install, existing-hook append, core.hooksPath report ---
+echo
+echo "-- git pre-commit hook install --"
+if command -v git >/dev/null 2>&1; then
+    GIT1="$SANDBOX/git-fresh"
+    mkdir -p "$GIT1"
+    git -C "$GIT1" init -q
+    out="$("$BINARY" init "$GIT1" 2>&1)"
+    printf '%s\n' "$out" | sed 's/^/    /'
+    assert_contains "$out" "  created  git hook: pre-commit (installed)" "fresh git repo: pre-commit hook installed"
+    if [[ -x "$GIT1/.git/hooks/pre-commit" ]]; then
+        pass "installed pre-commit hook is executable"
+    else
+        fail "installed pre-commit hook is executable — not executable or missing"
+    fi
+    out2="$("$BINARY" init "$GIT1" 2>&1)"
+    assert_contains "$out2" "  skipped  git hook: pre-commit (block already present)" "re-init skips, does not re-merge the git hook"
+
+    GIT2="$SANDBOX/git-existing-hook"
+    mkdir -p "$GIT2/.git/hooks"
+    git -C "$GIT2" init -q
+    printf '#!/usr/bin/env bash\necho existing\n' > "$GIT2/.git/hooks/pre-commit"
+    chmod +x "$GIT2/.git/hooks/pre-commit"
+    out="$("$BINARY" init "$GIT2" 2>&1)"
+    printf '%s\n' "$out" | sed 's/^/    /'
+    assert_contains "$out" "  merged   git hook: pre-commit (block appended)" "existing hook: managed block appended"
+    assert_contains "$(cat "$GIT2/.git/hooks/pre-commit")" "echo existing" "existing hook content preserved after append"
+
+    GIT3="$SANDBOX/git-hookspath"
+    mkdir -p "$GIT3/custom-hooks"
+    git -C "$GIT3" init -q
+    git -C "$GIT3" config core.hooksPath custom-hooks
+    out="$("$BINARY" init "$GIT3" 2>&1)"
+    printf '%s\n' "$out" | sed 's/^/    /'
+    assert_contains "$out" "core.hooksPath=custom-hooks" "core.hooksPath set: reported, not written"
+    if [[ ! -e "$GIT3/.git/hooks/pre-commit" ]] && [[ -z "$(ls -A "$GIT3/custom-hooks" 2>/dev/null)" ]]; then
+        pass "core.hooksPath set: nothing written to either location"
+    else
+        fail "core.hooksPath set: something was written despite the report-only contract"
+    fi
+else
+    echo "    git not on PATH — skipping git pre-commit hook scenarios"
 fi
 
 # --- 4. Invalid target directory ---

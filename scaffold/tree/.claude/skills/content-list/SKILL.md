@@ -31,6 +31,12 @@ skill is almost fully deterministic — three commands, then formatting.
    - Last 5 log entries (`recent_log`)
    - Drift (`ac-index check`: `dead_entries`, `unindexed_pages`) — drafts never
      appear here by design, not a drift signal
+   - Classification distribution (`classification`: C0/C1/C2/C3/unrated
+     counts) — a plain tally, not a health check. If `unrated` is
+     non-zero, or the user wants to know about staleness or floor
+     violations specifically, point to `content-lint` (which runs the
+     heavier `ac-classify sweep` audit) — `content-list` stays read-only
+     and does not run that detection pass itself.
 3. **Offer to fix drift** if `ac-index check` was not clean:
    ```sh
    .agentic-cms/scripts/ac-index remove <dead-path>              # per dead entry

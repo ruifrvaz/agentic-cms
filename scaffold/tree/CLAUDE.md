@@ -10,5 +10,7 @@ research, bulk import, and export tasks.
 
 Hard rules: `raw/` is immutable; `wiki/index.md` and `wiki/log.md` are updated on
 every content operation; schema changes to `CONTENT.md` require explicit user
-approval.
+approval; every page carries a `classification: C0-C3` rating you set at
+write time (see CONTENT.md's Classification section) — never lower one
+yourself, only raise.
 <!-- agentic-cms:end -->
