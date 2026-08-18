@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-08-18"
 mode: Assisted
 started: "2026-08-18"
-pr: 7
+completed: "2026-08-19"
 ---
 
 # Surface classification feature in README
@@ -117,7 +117,11 @@ Triage skipped — explicitly marked `Skip` in task Issue Triage Context
   token-refresh script; retried successfully.
 
 **Follow-up identified:**
-- None — task scoped to README only, fully delivered.
+- None — task scoped to README only, fully delivered. Note: after PR #7
+  merged, a direct commit to `main` ("cleaned up readme") further
+  reorganized the README (moved Compatibility/Getting Started earlier,
+  trimmed some prose) — that's the user's own follow-on edit, not part of
+  this task's scope.
 
 ## Files to Create / Modify
 
