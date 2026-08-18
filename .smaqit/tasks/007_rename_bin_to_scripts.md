@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-08-18"
 mode: Assisted
 started: "2026-08-18"
-pr: 4
+completed: "2026-08-18"
 ---
 
 # Rename .agentic-cms/bin to .agentic-cms/scripts
