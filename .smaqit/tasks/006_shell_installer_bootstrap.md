@@ -156,5 +156,15 @@ the `smaqit-extensions` CLI. Do not add `--install-global`, `--scope`,
 `uninstall`, or multi-agent (claude/codex/copilot) global directory
 scaffolding — those remain out of scope.
 
+**Repo visibility (discovered during implementation):** `ruifrvaz/agentic-cms`
+was private, which silently broke every documented install path — not just
+`install.sh`, but also the pre-existing `go install .../agentic-cms@latest`
+(the public Go module proxy can't fetch a private module without the
+installing machine having `GOPRIVATE` + its own git credentials configured).
+User confirmed this was never deliberate and made the repo public
+(2026-08-18). `install.sh` and `agentic-cms update`'s ancestor-dir
+resolution were both re-verified fully unauthenticated end-to-end against
+the live public repo (v0.5.0) after the flip — see Findings.
+
 Child tasks inherit their active parent's branch, worktree, and workflow
 mode. Only a standalone or parent task owns Git lifecycle cleanup.
