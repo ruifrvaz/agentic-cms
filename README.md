@@ -29,12 +29,11 @@ Knowledge is compiled once and kept current — not re-derived on every question
   `grep "^## \[" wiki/log.md | tail -5`.
 - **Immutability by convention, enforced by schema** — agents are instructed
   never to touch `raw/`; lint catches drift.
-- **One detector, many thin callers** — confidentiality classification
-  (`classification: C0-C3`) is enforced at four points (an agent hook after
-  every write, a git pre-commit gate, each write-path skill's verify step,
-  and `content-lint`'s health sweep), but all four are thin wrappers around
-  a single `ac-classify` engine. None re-implements detection; they only
-  differ in what they do with the result (block, warn, auto-fix, report).
+- **Confidentiality-aware by design** — every page is rated `classification:
+  C0-C3` on the CIA triad's confidentiality axis, set by the agent at write
+  time and enforced automatically, so the same synthesis that makes the
+  wiki useful can't silently leak what shouldn't spread. See
+  [Classification](#classification).
 
 ## How it works
 
@@ -53,6 +52,40 @@ points agents at it automatically.
 
 You work from any GUI that hosts a coding agent (VS Code, Cursor, a terminal) —
 the agent runs the skills, you browse the markdown.
+
+## Classification
+
+Every page in `docs/` and `wiki/` carries a `classification: C0-C3` rating —
+the standard **CIA triad's confidentiality axis** (Confidentiality,
+Integrity, Availability), applied to content instead of infrastructure:
+
+| Level | Meaning | Examples |
+|---|---|---|
+| **C0** Public | No harm if published | Marketing copy, public docs |
+| **C1** Internal (default) | Members-only, low harm | Working notes, internal how-tos |
+| **C2** Confidential | Need-to-know | Financial figures, personal data (PII), private strategy |
+| **C3** Restricted | Severe harm | Private correspondence, legal instruments, credentials |
+
+**Why it matters:** an agentic CMS isn't a passive filing cabinet — the agent
+actively reads across everything you drop into `raw/`, synthesizes it into
+`docs/`, and cross-links it into a compounding `wiki/`. That's the entire
+value proposition, and it's also exactly the mechanism by which one
+sensitive detail — a customer's PII buried in an old email, a credential
+pasted into a meeting note — can silently bleed into a summary, an index
+one-liner, or an exported deck, resurfacing somewhere far from where a
+human reviewer would have caught it. Classification makes that risk
+explicit and enforced instead of assumed: the agent rates every page it
+writes, ratings only ever ratchet **up** (only you can lower one), and
+`wiki/index.md`/`wiki/log.md` entries for C2+ pages are restricted to
+opaque summaries — no figures, no names, no quoted content.
+
+**One detector, many thin callers.** All of this is enforced by a single
+`ac-classify` engine — pattern-matching for credential-shaped strings and
+PII/financial content as an authoritative *floor*, never a full rating —
+called from four points: an agent hook after every write, a git pre-commit
+gate, each write-path skill's own verify step, and `content-lint`'s health
+sweep. None of the four re-implements detection; they only differ in what
+they do with the result (block, warn, auto-fix, report).
 
 ## Compatibility
 
