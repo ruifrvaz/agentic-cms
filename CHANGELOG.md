@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-19
+
 ### Fixed
 
-- **Scaffolding logic files now refresh on init/update** (pending v0.6.2 · PR #8) — `scaffold.Install()` previously skipped every existing file uniformly, so `.claude/skills/`, `.claude/agents/`, `.agentic-cms/templates/`, `.agentic-cms/scripts/`, `.agentic-cms/hooks/`, and `.codex/` never actually refreshed on re-init despite `update.go`'s documented intent. Those framework-owned paths are now always overwritten with the embedded version, reported under a new `updated` result bucket; user-content paths keep their skip-if-exists behavior.
+- **Scaffolding logic files now refresh on init/update** — `scaffold.Install()` previously skipped every existing file uniformly, so `.claude/skills/`, `.claude/agents/`, `.agentic-cms/templates/`, `.agentic-cms/scripts/`, `.agentic-cms/hooks/`, and `.codex/` never actually refreshed on re-init despite `update.go`'s documented intent. Those framework-owned paths are now always overwritten with the embedded version, reported under a new `updated` result bucket; user-content paths keep their skip-if-exists behavior.
 
 ## [0.6.1] - 2026-08-18
 
