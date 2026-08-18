@@ -3,10 +3,6 @@
     {
       "name": "main",
       "path": "."
-    },
-    {
-      "name": "task/006-shell-installer-bootstrap-no-go-dependency",
-      "path": "../agentic-cms-wt-task-006-shell-installer-bootstrap-no-go-dependency"
     }
   ],
   "settings": {
