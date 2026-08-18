@@ -15,13 +15,13 @@ var wantFiles = []string{
 	"wiki/index.md",
 	"wiki/log.md",
 	".agentic-cms/VERSION",
-	".agentic-cms/bin/README.md",
-	".agentic-cms/bin/ac-page",
-	".agentic-cms/bin/ac-index",
-	".agentic-cms/bin/ac-log",
-	".agentic-cms/bin/ac-links",
-	".agentic-cms/bin/ac-inventory",
-	".agentic-cms/bin/ac-search",
+	".agentic-cms/scripts/README.md",
+	".agentic-cms/scripts/ac-page",
+	".agentic-cms/scripts/ac-index",
+	".agentic-cms/scripts/ac-log",
+	".agentic-cms/scripts/ac-links",
+	".agentic-cms/scripts/ac-inventory",
+	".agentic-cms/scripts/ac-search",
 	".agentic-cms/templates/doc.md",
 	".agentic-cms/templates/entity.md",
 	".agentic-cms/templates/concept.md",
@@ -72,20 +72,20 @@ func TestInstallGreenfield(t *testing.T) {
 	if !strings.Contains(string(b), "{{DATE}}") {
 		t.Error("template lost {{DATE}} placeholder — it must stay live for ac-page new")
 	}
-	// .agentic-cms/bin/ is source code, not a page: ac-page's own source uses
+	// .agentic-cms/scripts/ is source code, not a page: ac-page's own source uses
 	// the literal string "{{DATE}}" as a placeholder key, so a blanket
 	// {{DATE}} substitution at install time would corrupt the script itself.
-	b, _ = os.ReadFile(filepath.Join(dir, ".agentic-cms", "bin", "ac-page"))
+	b, _ = os.ReadFile(filepath.Join(dir, ".agentic-cms", "scripts", "ac-page"))
 	if !strings.Contains(string(b), "{{DATE}}") {
 		t.Error("ac-page source corrupted — installer substituted {{DATE}} inside the script itself")
 	}
 	// Toolkit scripts must be executable.
-	fi, err := os.Stat(filepath.Join(dir, ".agentic-cms", "bin", "ac-index"))
+	fi, err := os.Stat(filepath.Join(dir, ".agentic-cms", "scripts", "ac-index"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if fi.Mode()&0o111 == 0 {
-		t.Error(".agentic-cms/bin/ac-index is not executable")
+		t.Error(".agentic-cms/scripts/ac-index is not executable")
 	}
 }
 

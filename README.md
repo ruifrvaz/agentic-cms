@@ -126,7 +126,7 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
 - **`wiki/log.md` is the audit trail.** `grep "^## \[" wiki/log.md | tail -5`.
 - **Immutability by convention, enforced by schema.** Skills and agents are
   instructed never to touch `raw/`; lint catches drift.
-- **Deterministic core, judgment at the edges.** `.agentic-cms/bin/` (the `ac-*`
+- **Deterministic core, judgment at the edges.** `.agentic-cms/scripts/` (the `ac-*`
   toolkit) owns every mechanical operation — page creation, frontmatter,
   `wiki/index.md`, `wiki/log.md`, link checking, search — as JSON-in/JSON-out
   bash+python3 scripts. Skills call it for structure and use their own judgment

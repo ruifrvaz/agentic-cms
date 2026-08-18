@@ -64,11 +64,11 @@ func Install(dir string) (*Result, error) {
 		}
 		content := string(data)
 		// Templates keep {{DATE}} as a live placeholder — ac-page fills it in at
-		// page-creation time, not at scaffold-install time. .agentic-cms/bin/ is
+		// page-creation time, not at scaffold-install time. .agentic-cms/scripts/ is
 		// source code: it references the literal string "{{DATE}}" as a
 		// placeholder key, which a blanket substitution would corrupt.
 		if !strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/templates/")) &&
-			!strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/bin/")) {
+			!strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/scripts/")) {
 			content = strings.ReplaceAll(content, "{{DATE}}", date)
 		}
 
@@ -85,7 +85,7 @@ func Install(dir string) (*Result, error) {
 		}
 		// The ac toolkit must be executable.
 		mode := os.FileMode(0o644)
-		if strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/bin/")) && !strings.HasSuffix(rel, ".md") {
+		if strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/scripts/")) && !strings.HasSuffix(rel, ".md") {
 			mode = 0o755
 		}
 		if err := os.WriteFile(target, []byte(content), mode); err != nil {

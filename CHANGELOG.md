@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-18
+
 ### Changed
 
-- **`.agentic-cms/bin/` renamed to `.agentic-cms/scripts/`** (pending v0.4.0 · PR #4) — the toolkit directory held committed source (bash+python3 scripts meant to be read and audited), not compiled build output, colliding with the generic IDE convention that `bin/` is safe to hide as build artifacts. Fresh installs only; already-installed projects keep a stale `.agentic-cms/bin/` until reconciled, same gap as the `content-new-item` → `content-manage-item` rename.
+- **`.agentic-cms/bin/` renamed to `.agentic-cms/scripts/`** — the toolkit directory held committed source (bash+python3 scripts meant to be read and audited), not compiled build output, colliding with the generic IDE convention that `bin/` is safe to hide as build artifacts. Fresh installs only; already-installed projects keep a stale `.agentic-cms/bin/` until reconciled, same gap as the `content-new-item` → `content-manage-item` rename.
 
 ## [0.3.0] - 2026-08-16
 

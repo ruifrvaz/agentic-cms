@@ -2,14 +2,14 @@
 name: content-import
 description: Import raw sources (PPTX, DOCX, PDF, markdown, text, or a whole folder of unstructured content) into the CMS structure. Use for "import this file/deck/doc", "ingest X", or bringing an existing brownfield project's content into raw/, docs/ and the wiki.
 license: MIT
-compatibility: Requires bash and python3 (uses the .agentic-cms/bin toolkit); conversion may install pandoc, markitdown, or python-pptx
+compatibility: Requires bash and python3 (uses the .agentic-cms/scripts toolkit); conversion may install pandoc, markitdown, or python-pptx
 allowed-tools: Read Write Edit Grep Glob Bash
 ---
 
 # content-import — ingest raw sources
 
 Read `CONTENT.md` at the project root first if you haven't this session. Toolkit
-contract: `.agentic-cms/bin/README.md` — check `"ok"` after every `ac-*` call.
+contract: `.agentic-cms/scripts/README.md` — check `"ok"` after every `ac-*` call.
 
 ## Two modes
 
@@ -32,15 +32,15 @@ contract: `.agentic-cms/bin/README.md` — check `"ok"` after every `ac-*` call.
    Install what's missing (`pip install markitdown python-pptx --break-system-packages`).
 3. **File it** (deterministic shell, judgment content):
    ```sh
-   .agentic-cms/bin/ac-inventory        # pick the topic; ask only if ambiguous
-   .agentic-cms/bin/ac-page new doc docs/<topic>/<item>.md --title "<Title>" --topic <topic> --raw-path raw/<file>
+   .agentic-cms/scripts/ac-inventory        # pick the topic; ask only if ambiguous
+   .agentic-cms/scripts/ac-page new doc docs/<topic>/<item>.md --title "<Title>" --topic <topic> --raw-path raw/<file>
    ```
    Merge the converted markdown into the created page (clean heading levels,
    tables, export artifacts) and set frontmatter `sources: [raw/<file>]`.
 4. **Wiki integration**:
    ```sh
-   .agentic-cms/bin/ac-page new source wiki/sources/<source-slug>.md --title "<Source Title>" --raw-path raw/<file>
-   .agentic-cms/bin/ac-index add sources wiki/sources/<source-slug>.md "<one-line summary>"
+   .agentic-cms/scripts/ac-page new source wiki/sources/<source-slug>.md --title "<Source Title>" --raw-path raw/<file>
+   .agentic-cms/scripts/ac-index add sources wiki/sources/<source-slug>.md "<one-line summary>"
    ```
    Write the summary/takeaways (judgment). Then update every entity/concept page
    the source materially affects — new facts, contradictions (flag, don't
@@ -48,8 +48,8 @@ contract: `.agentic-cms/bin/README.md` — check `"ok"` after every `ac-*` call.
    add` every page you create.
 5. **Log and verify**:
    ```sh
-   .agentic-cms/bin/ac-log append import "<source>" "<pages created/updated>"
-   .agentic-cms/bin/ac-index check && .agentic-cms/bin/ac-links check
+   .agentic-cms/scripts/ac-log append import "<source>" "<pages created/updated>"
+   .agentic-cms/scripts/ac-index check && .agentic-cms/scripts/ac-links check
    ```
    Both must report `"clean": true`.
 

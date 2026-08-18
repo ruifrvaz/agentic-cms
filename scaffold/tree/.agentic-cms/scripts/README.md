@@ -72,8 +72,8 @@ ac-search <term> [term...]  → {"ok":true,"files_matched":n,"results":[{file,hi
 ## Composition example
 
 ```sh
-.agentic-cms/bin/ac-page new doc docs/ai/agents.md --title "Agents" --topic ai
-.agentic-cms/bin/ac-index add topics docs/ai/agents.md "Agent architectures"
-.agentic-cms/bin/ac-log append new-item "ai/agents"
-.agentic-cms/bin/ac-index check   # verify clean afterwards
+.agentic-cms/scripts/ac-page new doc docs/ai/agents.md --title "Agents" --topic ai
+.agentic-cms/scripts/ac-index add topics docs/ai/agents.md "Agent architectures"
+.agentic-cms/scripts/ac-log append new-item "ai/agents"
+.agentic-cms/scripts/ac-index check   # verify clean afterwards
 ```

@@ -24,7 +24,7 @@ Workflow:
    Create `exports/` if missing.
 4. **Verify**: re-open the produced file programmatically (extract text) and check
    nothing is empty or truncated.
-5. **Log**: `.agentic-cms/bin/ac-log append export "<name>.<ext>" "<pages exported>"`
+5. **Log**: `.agentic-cms/scripts/ac-log append export "<name>.<ext>" "<pages exported>"`
    (JSON out — check `"ok"`).
 6. **Report back**: output path, structure overview (slide/section list), and any
    content you had to omit for length.

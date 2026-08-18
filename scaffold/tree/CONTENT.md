@@ -55,7 +55,7 @@ wiki/
 
 ## The toolkit
 
-Mechanical operations MUST go through `.agentic-cms/bin/` instead of hand-editing:
+Mechanical operations MUST go through `.agentic-cms/scripts/` instead of hand-editing:
 creating pages from templates (`ac-page new`), reading/updating frontmatter
 (`ac-page meta|touch`), index maintenance (`ac-index add|remove|check`), logging
 (`ac-log append`), link checking (`ac-links check`), inventory (`ac-inventory`),
@@ -63,7 +63,7 @@ and term search (`ac-search`). Every command prints one JSON object; check `"ok"
 before proceeding, and finish write operations with `ac-index check` /
 `ac-links check` returning `"clean": true`. Judgment work — summarizing,
 synthesis, wording — stays with the agent. Full contract:
-`.agentic-cms/bin/README.md`.
+`.agentic-cms/scripts/README.md`.
 
 ## Conventions
 

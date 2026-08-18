@@ -2,14 +2,14 @@
 name: content-export
 description: Export content from the CMS into a PPTX presentation or DOCX document. Use for "make a deck from X", "export Y as a Word doc", "summarize topic Z into a presentation".
 license: MIT
-compatibility: Requires bash and python3 (uses the .agentic-cms/bin toolkit); building files may install python-pptx or pandoc
+compatibility: Requires bash and python3 (uses the .agentic-cms/scripts toolkit); building files may install python-pptx or pandoc
 allowed-tools: Read Write Grep Glob Bash
 ---
 
 # content-export — export to PPTX / DOCX
 
 Read `CONTENT.md` at the project root first if you haven't this session. Toolkit
-contract: `.agentic-cms/bin/README.md`.
+contract: `.agentic-cms/scripts/README.md`.
 
 ## Steps
 
@@ -17,8 +17,8 @@ contract: `.agentic-cms/bin/README.md`.
    format (pptx/docx), audience/length.
 2. **Gather** (deterministic):
    ```sh
-   .agentic-cms/bin/ac-index list
-   .agentic-cms/bin/ac-search <topic terms>
+   .agentic-cms/scripts/ac-index list
+   .agentic-cms/scripts/ac-search <topic terms>
    ```
    Collect and read the relevant pages. Export from the wiki/docs synthesis, not
    from raw sources.
@@ -34,7 +34,7 @@ contract: `.agentic-cms/bin/README.md`.
    truncated. Tell the user where it is.
 5. **Log**:
    ```sh
-   .agentic-cms/bin/ac-log append export "<name>.<ext>" "<pages exported>"
+   .agentic-cms/scripts/ac-log append export "<name>.<ext>" "<pages exported>"
    ```
 
 ## Rules

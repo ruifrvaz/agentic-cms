@@ -2,15 +2,15 @@
 name: content-manage-item
 description: Create a single new content item (markdown page) inside an existing topic in docs/, and manage the item lifecycle — drafts, promotion, archiving. Use for "add a page on X", "write up Y", "document Z", and also "archive X", "retire Y", "bring Z back from the archive".
 license: MIT
-compatibility: Requires bash and python3 (uses the .agentic-cms/bin toolkit)
-allowed-tools: Read Write Edit Grep Glob Bash(.agentic-cms/bin/*)
+compatibility: Requires bash and python3 (uses the .agentic-cms/scripts toolkit)
+allowed-tools: Read Write Edit Grep Glob Bash(.agentic-cms/scripts/*)
 ---
 
 # content-manage-item — create and manage a content item
 
 Read `CONTENT.md` at the project root first if you haven't this session. All
-`ac-*` commands live in `.agentic-cms/bin/`, return JSON — check `"ok"` after
-every call (contract: `.agentic-cms/bin/README.md`).
+`ac-*` commands live in `.agentic-cms/scripts/`, return JSON — check `"ok"` after
+every call (contract: `.agentic-cms/scripts/README.md`).
 
 ## Modes
 
@@ -29,18 +29,18 @@ below for when it's ready to graduate.
 
 1. **Locate the topic**:
    ```sh
-   .agentic-cms/bin/ac-inventory
+   .agentic-cms/scripts/ac-inventory
    ```
    Pick the topic from `topics`. If none fits, run `content-new` first (confirm
    with the user).
 2. **Check for duplicates**:
    ```sh
-   .agentic-cms/bin/ac-search <subject> <synonyms>
+   .agentic-cms/scripts/ac-search <subject> <synonyms>
    ```
    If a page for this subject exists, extend it (or use `content-add-notes`).
 3. **Create from template** (kebab-case filename, no dates in the name):
    ```sh
-   .agentic-cms/bin/ac-page new doc docs/<topic>/<item>.md --title "<Title>" --topic <topic>
+   .agentic-cms/scripts/ac-page new doc docs/<topic>/<item>.md --title "<Title>" --topic <topic>
    ```
    **Draft mode**: target `docs/<topic>/drafts/<item>.md` instead, and add
    `--status draft` (default is `final`). Then write the real content
@@ -54,13 +54,13 @@ below for when it's ready to graduate.
    `ac-index add ...`) or update the existing one, and cross-link both ways
    (inline links + `refs:` frontmatter). After editing any existing page:
    ```sh
-   .agentic-cms/bin/ac-page touch <edited-file>
+   .agentic-cms/scripts/ac-page touch <edited-file>
    ```
 5. **Register, log, verify**:
    ```sh
-   .agentic-cms/bin/ac-index add topics docs/<topic>/<item>.md "<one-line summary>"
-   .agentic-cms/bin/ac-log append new-item "<topic>/<item>"
-   .agentic-cms/bin/ac-index check && .agentic-cms/bin/ac-links check
+   .agentic-cms/scripts/ac-index add topics docs/<topic>/<item>.md "<one-line summary>"
+   .agentic-cms/scripts/ac-log append new-item "<topic>/<item>"
+   .agentic-cms/scripts/ac-index check && .agentic-cms/scripts/ac-links check
    ```
    Both must report `"clean": true` before finishing. Also add the item to the
    topic's `README.md` item list.
@@ -69,7 +69,7 @@ below for when it's ready to graduate.
 
 1. **Move and clear draft status** (deterministic, one call):
    ```sh
-   .agentic-cms/bin/ac-page promote docs/<topic>/drafts/<item>.md docs/<topic>/<item>.md
+   .agentic-cms/scripts/ac-page promote docs/<topic>/drafts/<item>.md docs/<topic>/<item>.md
    ```
    Moves the file, sets `status: final`, and touches `updated:`. Refuses if
    `docs/<topic>/<item>.md` already exists (a duplicate created since the
@@ -82,21 +82,21 @@ below for when it's ready to graduate.
 
 1. **Move and mark** (deterministic, one call):
    ```sh
-   .agentic-cms/bin/ac-page archive docs/<topic>/<item>.md docs/<topic>/archive/<item>.md
+   .agentic-cms/scripts/ac-page archive docs/<topic>/<item>.md docs/<topic>/archive/<item>.md
    ```
    Moves the file, sets `status: archived`, touches `updated:`. Refuses if the
    destination already exists — flag that to the user rather than overwriting.
 2. **Re-file the index entry** — archived pages stay in the index, under
    `## Archived` (the section is created automatically if missing):
    ```sh
-   .agentic-cms/bin/ac-index remove docs/<topic>/<item>.md
-   .agentic-cms/bin/ac-index add archived docs/<topic>/archive/<item>.md "<original summary>"
-   .agentic-cms/bin/ac-log append archive "<topic>/<item>"
+   .agentic-cms/scripts/ac-index remove docs/<topic>/<item>.md
+   .agentic-cms/scripts/ac-index add archived docs/<topic>/archive/<item>.md "<original summary>"
+   .agentic-cms/scripts/ac-log append archive "<topic>/<item>"
    ```
 3. **Clean up references**: remove the item from its topic's `README.md` list,
    then:
    ```sh
-   .agentic-cms/bin/ac-index check && .agentic-cms/bin/ac-links check
+   .agentic-cms/scripts/ac-index check && .agentic-cms/scripts/ac-links check
    ```
    `ac-links check` will flag inbound links from active pages now pointing at
    the old path — that is the point: update or remove each reference (and
