@@ -25,8 +25,10 @@ type githubAsset struct {
 }
 
 // runUpdate self-updates the binary to the latest GitHub release, then
-// re-initializes the current directory if it looks like an installed project.
+// re-initializes the project directory if it looks like an installed project.
 func runUpdate(localVersion string) {
+	projectDir := resolveDefaultProjectDir(".")
+
 	release, err := fetchLatestRelease()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching latest release: %v\n", err)
@@ -44,12 +46,12 @@ func runUpdate(localVersion string) {
 	}
 	if cmp == 0 {
 		fmt.Printf("Already up to date (%s)\n", localVersion)
-		checkAndReInit(".")
+		checkAndReInit(projectDir)
 		return
 	}
 	if cmp > 0 {
 		fmt.Printf("Local version (%s) is newer than latest release (%s). Nothing to do.\n", localVersion, release.TagName)
-		checkAndReInit(".")
+		checkAndReInit(projectDir)
 		return
 	}
 
@@ -111,7 +113,40 @@ func runUpdate(localVersion string) {
 	// the OLD version's embedded scaffold in memory even though the file on
 	// disk was just replaced — reinitializing here would silently skip
 	// anything new in the release just downloaded.
-	reinitWithBinary(currentBin, ".")
+	reinitWithBinary(currentBin, projectDir)
+}
+
+// resolveDefaultProjectDir finds the project root for `update` when invoked
+// without an explicit target, so it works from any subdirectory of an
+// installed project rather than only the current directory. It walks up to
+// the nearest ancestor containing .agentic-cms/; a directory with no such
+// ancestor (a fresh, not-yet-initialized project) falls back to startDir.
+func resolveDefaultProjectDir(startDir string) string {
+	absStart, err := filepath.Abs(startDir)
+	if err != nil {
+		return startDir
+	}
+	if root, ok := findAncestorWithEntry(absStart, ".agentic-cms"); ok {
+		return root
+	}
+	return absStart
+}
+
+// findAncestorWithEntry walks up from startDir looking for a directory
+// containing entryName, returning the first match or false if none is found
+// before reaching the filesystem root.
+func findAncestorWithEntry(startDir, entryName string) (string, bool) {
+	dir := startDir
+	for {
+		if _, err := os.Stat(filepath.Join(dir, entryName)); err == nil {
+			return dir, true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", false
+		}
+		dir = parent
+	}
 }
 
 // fetchLatestRelease queries the GitHub API and returns release metadata.

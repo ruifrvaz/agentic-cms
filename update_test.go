@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestCompareVersions(t *testing.T) {
 	cases := []struct {
@@ -34,5 +38,48 @@ func TestCompareVersionsInvalid(t *testing.T) {
 	}
 	if _, err := compareVersions("0.1.0", "not-a-version"); err == nil {
 		t.Error("compareVersions(\"0.1.0\", \"not-a-version\") expected an error, got nil")
+	}
+}
+
+func TestResolveDefaultProjectDirFindsAncestor(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".agentic-cms"), 0o755); err != nil {
+		t.Fatalf("mkdir .agentic-cms: %v", err)
+	}
+	nested := filepath.Join(root, "docs", "topic")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	got := resolveDefaultProjectDir(nested)
+
+	wantRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatalf("eval symlinks on root: %v", err)
+	}
+	gotResolved, err := filepath.EvalSymlinks(got)
+	if err != nil {
+		t.Fatalf("eval symlinks on result: %v", err)
+	}
+	if gotResolved != wantRoot {
+		t.Errorf("resolveDefaultProjectDir(%q) = %q, want %q", nested, got, root)
+	}
+}
+
+func TestResolveDefaultProjectDirNoAncestorFallsBackToStart(t *testing.T) {
+	start := t.TempDir()
+
+	got := resolveDefaultProjectDir(start)
+
+	wantStart, err := filepath.EvalSymlinks(start)
+	if err != nil {
+		t.Fatalf("eval symlinks on start: %v", err)
+	}
+	gotResolved, err := filepath.EvalSymlinks(got)
+	if err != nil {
+		t.Fatalf("eval symlinks on result: %v", err)
+	}
+	if gotResolved != wantStart {
+		t.Errorf("resolveDefaultProjectDir(%q) = %q, want %q", start, got, start)
 	}
 }
