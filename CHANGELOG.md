@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-18
+
 ### Changed
 
-- **Classification surfaced in README** (pending v0.6.1 · PR #7) — promotes the C0-C3 confidentiality classification feature to a headline Features bullet naming the CIA triad, plus a new dedicated Classification section explaining the levels and why enforcement matters for agent-driven content synthesis.
+- **Classification surfaced in README** — promotes the C0-C3 confidentiality classification feature to a headline Features bullet naming the CIA triad, plus a new dedicated Classification section explaining the levels and why enforcement matters for agent-driven content synthesis.
 
 ## [0.6.0] - 2026-08-18
 
