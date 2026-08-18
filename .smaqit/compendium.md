@@ -31,6 +31,14 @@ See also: how does the draft / work-in-progress content state work?
 
 ## Content Classification
 
+**Why does agentic-cms need confidentiality classification at all?**
+
+An agentic CMS isn't a passive filing cabinet — the agent actively reads across everything dropped into `raw/`, synthesizes it into `docs/`, and cross-links it into a compounding `wiki/`. That synthesis is the entire value proposition, and it's also exactly the mechanism by which one sensitive detail — a customer's PII buried in an old email, a credential pasted into a meeting note — can silently bleed into a summary, an index one-liner, or an exported deck, resurfacing somewhere far from where a human reviewer would have caught it. The `classification: C0-C3` system (the CIA triad's confidentiality axis) makes that risk explicit and enforced instead of assumed, rather than relying on an agent's implicit judgment alone.
+
+See also: how is content classification (confidentiality rating) enforced?
+
+---
+
 **How is content classification (confidentiality rating) enforced?**
 
 Every `docs/`/`wiki/` page carries an optional `classification: C0 | C1 | C2 | C3` frontmatter field (standard CIA confidentiality axis: C0 Public, C1 Internal — the default when absent, C2 Confidential, C3 Restricted), rated by the agent at write time against a rubric in `CONTENT.md`. All detection logic — enum validity, staleness (via a `classified-hash` stamped at rating time), and heuristic floor patterns (credential-shaped strings imply at least C3; PII/currency-shaped content implies at least C2) — lives in exactly one place: `.agentic-cms/scripts/ac-classify` (`check`/`sweep`/`hook` subcommands). Every enforcement point is a thin caller of that one engine, never a re-implementation:
@@ -42,7 +50,7 @@ Every `docs/`/`wiki/` page carries an optional `classification: C0 | C1 | C2 | C
 
 The ratchet rule: an agent may *raise* a page's classification; only the user may lower one. No mechanical path in the toolkit ever lowers a rating — `ac-page classify <path> <level>` will technically accept any level, but skill instructions and the hook's auto-raise logic only ever move upward.
 
-See also: how does the git pre-commit classification gate get bypassed?; is classification enforcement available outside a project where `agentic-cms init` was run?
+See also: why does agentic-cms need confidentiality classification at all?; how does the git pre-commit classification gate get bypassed?; is classification enforcement available outside a project where `agentic-cms init` was run?
 
 ---
 
@@ -66,6 +74,16 @@ See also: how is content classification (confidentiality rating) enforced?
 No — as of the current implementation, every classification enforcement layer (the toolkit script, both agent hooks, the git pre-commit gate, the skill verify tails) is installed per-project by `agentic-cms init`, and only exists in that specific target directory. Nothing is written to a user-global location (`~/.claude/skills/`, `~/.claude/settings.json`, or similar), and there is no global git hook mechanism in use. A project that has never run `init` on itself has zero coverage, with no fallback.
 
 See also: how is content classification (confidentiality rating) enforced?
+
+---
+
+## Installation
+
+**Does `install.sh` (or `go install`) support installing from a private GitHub repo?**
+
+No — both installation paths assume `ruifrvaz/agentic-cms` is public. `install.sh` calls the unauthenticated GitHub Releases API and downloads release assets directly; both return `404` on a private repo without a credential. `go install .../agentic-cms@latest` has the same dependency in a different form: the public Go module proxy can't fetch a private module without the installing machine having `GOPRIVATE` and its own git credentials configured.
+
+If private-repo distribution is ever needed, the fix isn't GitHub Packages — a private package requires the same kind of per-user credential distribution as a private release, so it relocates the problem rather than removing it. The correct approach would be an env-var-supplied token (`Authorization: Bearer`) sent on both the GitHub API request and the asset download — via the API's `/releases/assets/{id}` endpoint with `Accept: application/octet-stream`, not the plain `browser_download_url`: forwarding a Bearer token through that URL's redirect to GitHub's signed blob storage returns `404` rather than a clean auth error.
 
 ---
 
