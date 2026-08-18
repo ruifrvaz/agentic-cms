@@ -6,9 +6,28 @@ thin scaffolding on top of any project folder; from then on, your coding agent
 does the content work: importing raw documents, organizing them into a
 structured knowledge base, researching gaps, and exporting deliverables.
 
-Heavily inspired by [Andrej Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f):
-an agent-maintained, compounding wiki that sits between you and your raw sources.
-Knowledge is compiled once and kept current — not re-derived on every question.
+## Compatibility
+
+Currently supported:
+
+| Platform | Status |
+|----------|--------|
+| Claude Code | ✅ Supported |
+| GitHub Copilot | Planned |
+| OpenAI Codex | Planned |
+
+## Getting Started
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ruifrvaz/agentic-cms/main/install.sh | bash
+```
+
+**Initialize:**
+
+```sh
+cd your-project
+agentic-cms init
+```
 
 ## Features
 
@@ -29,12 +48,11 @@ Knowledge is compiled once and kept current — not re-derived on every question
   `grep "^## \[" wiki/log.md | tail -5`.
 - **Immutability by convention, enforced by schema** — agents are instructed
   never to touch `raw/`; lint catches drift.
-- **One detector, many thin callers** — confidentiality classification
-  (`classification: C0-C3`) is enforced at four points (an agent hook after
-  every write, a git pre-commit gate, each write-path skill's verify step,
-  and `content-lint`'s health sweep), but all four are thin wrappers around
-  a single `ac-classify` engine. None re-implements detection; they only
-  differ in what they do with the result (block, warn, auto-fix, report).
+- **Confidentiality-aware by design** — every page is rated `classification:
+  C0-C3` on the CIA triad's confidentiality axis, set by the agent at write
+  time and enforced automatically, so the same synthesis that makes the
+  wiki useful can't silently leak what shouldn't spread. See
+  [Classification](#classification).
 
 ## How it works
 
@@ -54,26 +72,33 @@ points agents at it automatically.
 You work from any GUI that hosts a coding agent (VS Code, Cursor, a terminal) —
 the agent runs the skills, you browse the markdown.
 
-## Compatibility
+## Classification
 
-Currently supported:
+Every page in `docs/` and `wiki/` carries a `classification: C0-C3` rating —
+the standard **CIA triad's confidentiality axis** (Confidentiality,
+Integrity, Availability), applied to content instead of infrastructure:
 
-| Platform | Status |
-|----------|--------|
-| Claude Code | ✅ Supported |
-| GitHub Copilot | Planned |
-| OpenAI Codex | Planned |
+| Level | Meaning | Examples |
+|---|---|---|
+| **C0** Public | No harm if published | Marketing copy, public docs |
+| **C1** Internal (default) | Members-only, low harm | Working notes, internal how-tos |
+| **C2** Confidential | Need-to-know | Financial figures, personal data (PII), private strategy |
+| **C3** Restricted | Severe harm | Private correspondence, legal instruments, credentials |
 
-## Getting Started
+**Why it matters:** an agentic CMS isn't a passive filing cabinet — the agent
+actively reads across everything you drop into `raw/`, synthesizes it into
+`docs/`, and cross-links it into a compounding `wiki/`. That's the entire
+value proposition, and it's also exactly the mechanism by which one
+sensitive detail — a customer's PII buried in an old email, a credential
+pasted into a meeting note — can silently bleed into a summary, an index
+one-liner, or an exported deck, resurfacing somewhere far from where a
+human reviewer would have caught it. Classification makes that risk
+explicit and enforced instead of assumed: the agent rates every page it
+writes, ratings only ever ratchet **up** (only you can lower one), and
+`wiki/index.md`/`wiki/log.md` entries for C2+ pages are restricted to
+opaque summaries — no figures, no names, no quoted content.
 
-**Prerequisite:** none — the `curl | bash` install needs no Go toolchain. Linux
-only for now.
-
-**Install:**
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/ruifrvaz/agentic-cms/main/install.sh | bash
-```
+## For developers
 
 Downloads the latest release binary into `~/.local/bin`. Pin a version with
 `AGENTIC_CMS_VERSION=vX.Y.Z`.
@@ -84,13 +109,6 @@ For Go users or contributors building from source:
 go install github.com/ruifrvaz/agentic-cms@latest
 # or from a clone:
 make build && sudo make install
-```
-
-**Initialize:**
-
-```sh
-cd your-project
-agentic-cms init
 ```
 
 **Build something:**
@@ -172,19 +190,6 @@ the agent when importing/exporting — the scaffold itself is pure markdown.
   into your project; read the installed copy first
 - **[CHANGELOG.md](CHANGELOG.md)** — release history
 
-## Repository layout
-
-```
-install.sh         curl | bash bootstrap: downloads the latest release binary
-                   into ~/.local/bin, no Go toolchain required
-main.go            CLI (init, update, version, help)
-update.go          self-update: fetch latest GitHub release, replace the
-                   binary, re-run init in the project directory
-scaffold/embed.go  go:embed + non-destructive installer
-scaffold/tree/     the scaffolding that gets installed (edit this to change
-                   what ships; `all:` embed includes the dot-directories)
-```
-
 ## Development
 
 ```sh
@@ -214,6 +219,11 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
   nor clean up renamed ones (upgraded installs keep the stale
   `content-new-item/` skill dir alongside its replacement `content-manage-item/`)
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
+
+## Brief mention
+
+Heavily inspired by [Andrej Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f):
+an agent-maintained, compounding wiki that sits between you and your raw sources.
 
 ## License
 
