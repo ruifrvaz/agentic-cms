@@ -12,11 +12,15 @@ Requires bash and python3 (stdlib only).
 
 ### ac-page — pages and frontmatter
 ```
-ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>] [--status draft|final]
+ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>]
+            [--status draft|final] [--classification C0|C1|C2|C3]
   templates: doc entity concept source topic  (from .agentic-cms/templates/)
-  → {"ok":true,"path":...,"template":...,"title":...,"slug":...}
-  Refuses to overwrite. Fills {{TITLE}} {{TOPIC}} {{RAW_PATH}} {{STATUS}} {{DATE}}.
+  → {"ok":true,"path":...,"template":...,"title":...,"slug":...,"classification":...}
+  Refuses to overwrite. Fills {{TITLE}} {{TOPIC}} {{RAW_PATH}} {{STATUS}}
+  {{CLASSIFICATION}} {{CLASSIFIED_HASH}} {{DATE}}.
   --status defaults to final; pass --status draft for docs/<topic>/drafts/ items.
+  --classification defaults to C1; stamps classified-hash from the page's
+  initial body so ac-classify check reports it as freshly rated.
 ac-page meta <file.md>    → {"ok":true,"path":...,"frontmatter":{...}}
 ac-page touch <file.md>   → sets updated: to today
 ac-page promote <src.md> <dest.md>
@@ -29,6 +33,12 @@ ac-page archive <src.md> <dest.md>
   Mirror of promote: moves src to dest, sets status: archived (inserting
   the field if absent), touches updated:. Refuses to overwrite. Used to
   retire an item into docs/<topic>/archive/.
+ac-page classify <file.md> <C0|C1|C2|C3>
+  → {"ok":true,"path":...,"classification":...,"classified-hash":...,"updated":...}
+  Sets classification (inserting the field if absent), restamps
+  classified-hash from the file's current body, touches updated:. Purely
+  mechanical — does not enforce the ratchet rule (raise-only); that is a
+  skill-instruction and hook-logic policy, not a tool constraint.
 ```
 
 ### ac-index — wiki/index.md maintenance
@@ -44,7 +54,7 @@ ac-index check            → {"ok":true,"clean":bool,"dead_entries":[],"unindex
 ### ac-log — wiki/log.md journal
 ```
 ac-log append <operation> <subject> [detail]
-  operations: init new new-item import research notes query lint export archive unarchive
+  operations: init new new-item import research notes query lint export archive unarchive classify
 ac-log tail [n]           → {"ok":true,"entries":[{date,operation,subject}]}
 ```
 
@@ -56,12 +66,57 @@ ac-links check            → {"ok":true,"clean":bool,"links_checked":n,"broken"
 
 ### ac-inventory — full content-base inventory
 ```
-ac-inventory              → {"ok":true,"topics":{...},"drafts":{...},"archived":{...},"wiki":{...},"raw_uningested":[],"recent_log":[...]}
+ac-inventory              → {"ok":true,"topics":{...},"drafts":{...},"archived":{...},
+                              "classification":{...},"wiki":{...},"raw_uningested":[],"recent_log":[...]}
   drafts: {<topic>: {"count":n,"files":[...]}} — status: draft items in docs/<topic>/drafts/,
     not yet wired into the index (see CONTENT.md's Drafts convention)
   archived: same shape — status: archived items in docs/<topic>/archive/, still
     indexed under the Archived section (see CONTENT.md's Archive convention)
+  classification: {"C0":n,"C1":n,"C2":n,"C3":n,"unrated":n} — a frontmatter
+    tally only (counts the classification: value already on each page); for
+    staleness/floor/bleed *detection* use ac-classify check|sweep instead —
+    this field is the cheap read-only count, that is the audit
 ```
+
+### ac-classify — classification detection engine
+```
+ac-classify check <path...>
+  → {"ok":true,"clean":bool,"pages":[{path,classification,valid,unrated,
+                                       stale,floor,floor_violation[,implied_level]}]}
+  Per-page: is the classification value legal, is it unrated (no field —
+  defaults to C1), is it stale (classified-hash doesn't match the current
+  body — content changed since last rated), and does the body's content
+  trip a heuristic floor pattern (credential-shaped → C3; email/currency/
+  PII-shaped → C2) above the current rating. clean is false only on an
+  invalid value or a floor violation — staleness and unrated are
+  advisory, not blocking, by design (see CONTENT.md's Classification
+  section for the block-vs-warn split).
+ac-classify sweep
+  → {"ok":true,"clean":bool,"pages":[...],"bleed":[{page,location,line,text,detected}]}
+  check across every docs/**/*.md, wiki/entities/*.md, wiki/concepts/*.md,
+  wiki/sources/*.md, plus the bleed check: any wiki/index.md or
+  wiki/log.md line that itself trips a floor pattern while referencing a
+  C2+ page (independent of that page's own body) — the C2+ index/log
+  bleed rule.
+ac-classify hook
+  Reads a Claude Code/Codex PostToolUse JSON payload from stdin (auto-
+  detects tool_input.file_path/path shape), filters to docs/**/wiki/**
+  markdown paths only — everything else is a silent {"ok":true,"skip":true}.
+  A floor violation auto-applies (ac-page classify to the implied level +
+  an ac-log classify entry) and returns {"ok":true,"auto_raised":true,...}.
+  A stale rating blocks: exit 2, {"decision":"block","reason":...} on
+  stdout, the reason also on stderr. Otherwise {"ok":true,"clean":true}.
+  This is the ONLY engine — every caller (skill verify tails, both agent
+  hooks, the git pre-commit gate, content-lint) invokes check/sweep/hook;
+  none re-implements detection.
+```
+Wired in by the scaffold: `.claude/settings.json` and `.codex/hooks.json`
+(both PostToolUse → `ac-classify hook`), and `.agentic-cms/hooks/pre-commit`
+(a versioned script `agentic-cms init` wires into `.git/hooks/pre-commit`
+non-destructively — see the root README's install notes). Copilot CLI's
+hook is not wired in this version (no documented blocking capability as of
+this writing) — the skill-tail `ac-classify check` calls are the guaranteed
+fallback there.
 
 ### ac-search — term search (retrieval)
 ```

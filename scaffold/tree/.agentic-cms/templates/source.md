@@ -6,6 +6,8 @@ created: {{DATE}}
 updated: {{DATE}}
 sources: [{{RAW_PATH}}]
 refs: []
+classification: {{CLASSIFICATION}}
+classified-hash: {{CLASSIFIED_HASH}}
 ---
 
 # {{TITLE}}

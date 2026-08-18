@@ -43,14 +43,19 @@ wiki/
   concepts/           pages about ideas, patterns, themes
   sources/            one summary page per ingested raw source
 .agentic-cms/
-  bin/                deterministic CLI toolkit (ac-page, ac-index, ac-log,
-                      ac-links, ac-inventory, ac-search) — JSON on stdout;
-                      contract in bin/README.md
+  scripts/            deterministic CLI toolkit (ac-page, ac-index, ac-log,
+                      ac-links, ac-inventory, ac-search, ac-classify) —
+                      JSON on stdout; contract in scripts/README.md
+  hooks/pre-commit    git pre-commit gate (classification check on staged
+                      content); wired into .git/hooks/ by `init`
   templates/          markdown templates for every page type
   VERSION             scaffold version installed by agentic-cms
 .claude/
   skills/             content-* skills (workflows)
   agents/             researcher, importer, exporter subagents
+  settings.json       Claude Code PostToolUse hook (classification check)
+.codex/
+  hooks.json          Codex PostToolUse hook (classification check)
 ```
 
 ## The toolkit
@@ -81,6 +86,8 @@ synthesis, wording — stays with the agent. Full contract:
   sources: [raw/file.pdf]   # raw sources this page draws on
   refs: [wiki/concepts/x.md]# pages this page depends on
   status: final             # draft | final (default) | archived
+  classification: C1        # C0 | C1 (default) | C2 | C3 — see Classification below
+  classified-hash: a1b2c3d4e5f6  # stamped by ac-page at rating time; do not hand-edit
   ---
   ```
 
@@ -110,6 +117,61 @@ synthesis, wording — stays with the agent. Full contract:
   `archive/` back up plus the reverse re-filing and an `unarchive` log entry.
   `raw/` is never archived (it is immutable); `exports/` is never archived
   (derived artifacts are regenerable).
+- **Classification**: `classification: C0 | C1 | C2 | C3` rates a page's
+  confidentiality on the standard CIA confidentiality axis:
+  - **C0 Public** — no harm if published (marketing copy, public docs).
+  - **C1 Internal** (default; absent field means C1) — members-only, low
+    harm (working notes, internal how-tos).
+  - **C2 Confidential** — need-to-know: financial figures, personal data
+    (PII), private strategy.
+  - **C3 Restricted** — severe harm: verbatim private correspondence,
+    legal instruments, anything credential-adjacent (API keys, tokens,
+    passwords).
+
+  **Rating is the agent's job, at write time**, judged against the scale
+  above — not a mechanical classifier. Every write-path skill rates before
+  it writes and passes the rating to `ac-page new --classification`
+  (default C1 if the content is unremarkable). `ac-page` stamps a
+  `classified-hash:` alongside the rating — a short hash of the page body
+  — so later tooling can tell whether the content changed since it was
+  last rated.
+
+  **Ratchet**: an agent may *raise* a page's classification on update — a
+  new note can make a page more sensitive — but only the **user** may
+  *lower* one. Misclassifying downward is the dangerous direction;
+  over-protecting is always the recoverable one. No mechanical path in
+  this toolkit ever lowers a rating.
+
+  **Heuristic floors, not ratings**: `.agentic-cms/scripts/ac-classify`
+  pattern-matches page bodies for credential-shaped strings (→ implies at
+  least C3) and PII/financial content — emails, currency figures next to
+  names (→ implies at least C2). A pattern hit is a **floor**: if the
+  page's current rating is below it, tooling may auto-raise to the floor,
+  never lower toward it. This is deliberately advisory-only for full
+  C0–C3 judgment — a regex cannot rate confidentiality — but authoritative
+  as a floor, because raising is always safe under the ratchet rule above.
+
+  **Bleed rule**: `wiki/index.md` one-liners and `wiki/log.md` entries for
+  a **C2+** page may use only opaque summaries — no figures, no personal
+  details, no quoted content. The bookkeeping layer inherits the
+  classification of what it describes unless deliberately written to
+  avoid doing so.
+
+  **Enforcement fires at two moments plus one audit — see
+  `.agentic-cms/scripts/README.md`'s `ac-classify` contract for the exact
+  commands**: an agent-lifecycle hook after every `docs/`/`wiki/` write, a
+  git pre-commit gate on staged content (the last local checkpoint before
+  a push), and `content-lint`'s existing health sweep as the periodic
+  catch-all for anything the first two never saw (pre-existing drift,
+  edits committed with `--no-verify`, or edits made with no hook
+  installed). Every one of these is a thin caller of `ac-classify` — none
+  re-implements detection.
+
+  **Multi-instance segregation — where C2+ content physically lives (a
+  separate vault repo, a two-tier split) — is out of scope for this
+  schema.** Classification makes content classifiable and bleed-safe
+  within one CMS instance; segregation is deployment policy, layered on
+  top by the project if needed.
 - **Cross-links**: use relative markdown links (`[X](../concepts/x.md)`). Obsidian-style
   `[[wikilinks]]` are acceptable if the user works in Obsidian; pick one per project
   and record the choice here.
@@ -120,7 +182,7 @@ synthesis, wording — stays with the agent. Full contract:
 - **log.md**: append-only. Every operation appends one entry with the header format
   `## [YYYY-MM-DD] <operation> | <subject>` so the log is greppable
   (`grep "^## \[" wiki/log.md | tail -5`). Operations: `init`, `new`, `new-item`,
-  `import`, `research`, `notes`, `lint`, `export`, `archive`, `unarchive`.
+  `import`, `research`, `notes`, `lint`, `export`, `archive`, `unarchive`, `classify`.
 - **Contradictions**: when new material contradicts an existing page, do not silently
   overwrite. Note the contradiction inline (`> ⚠ Contradicts [X](...) — newer source
   says ...`), update if the newer source is authoritative, and log it.

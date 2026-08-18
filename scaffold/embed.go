@@ -83,9 +83,11 @@ func Install(dir string) (*Result, error) {
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return err
 		}
-		// The ac toolkit must be executable.
+		// The ac toolkit and the versioned git hook scripts must be executable.
 		mode := os.FileMode(0o644)
-		if strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/scripts/")) && !strings.HasSuffix(rel, ".md") {
+		isScriptDir := strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/scripts/")) ||
+			strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/hooks/"))
+		if isScriptDir && !strings.HasSuffix(rel, ".md") {
 			mode = 0o755
 		}
 		if err := os.WriteFile(target, []byte(content), mode); err != nil {

@@ -34,6 +34,21 @@ archived = {t: {"count": len(files), "files": sorted(files)} for t, files in arc
 wiki = {cat: sorted(os.path.basename(p) for p in glob.glob(f"wiki/{cat}/*.md"))
         for cat in ("entities", "concepts", "sources")}
 
+# Classification distribution — a lightweight frontmatter tally, not a
+# detection pass (staleness/floor checks live in ac-classify; this just
+# counts the classification: value already on each page, the same way the
+# drafts/archived counts above just count a status: value).
+classification = {"C0": 0, "C1": 0, "C2": 0, "C3": 0, "unrated": 0}
+for pattern in ("docs/**/*.md", "wiki/entities/*.md", "wiki/concepts/*.md", "wiki/sources/*.md"):
+    for p in glob.glob(pattern, recursive=True):
+        text = open(p, encoding="utf-8").read()
+        m = re.search(r"^classification:\s*(\S+)", text, re.M)
+        level = m.group(1) if m else None
+        if level in ("C0", "C1", "C2", "C3"):
+            classification[level] += 1
+        else:
+            classification["unrated"] += 1
+
 # Raw files never referenced by any docs/wiki page (candidates for content-import).
 refs = ""
 for pattern in ("docs/**/*.md", "wiki/**/*.md"):
@@ -55,6 +70,7 @@ print(json.dumps({"ok": True,
                   "topics": topics,
                   "drafts": drafts,
                   "archived": archived,
+                  "classification": classification,
                   "wiki": {k: {"count": len(v), "files": v} for k, v in wiki.items()},
                   "raw_uningested": uningested,
                   "recent_log": log_entries[-5:]}))

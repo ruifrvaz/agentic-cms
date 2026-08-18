@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+# ac-classify — the single classification detection engine. JSON on stdout.
+# Every caller (skills, agent hooks, git pre-commit gate, content-lint) is a
+# thin wrapper around this script; none re-implements detection.
+#   ac-classify check <path...>   per-page: validity, staleness, floor
+#   ac-classify sweep             check across all of docs/ + wiki/, plus
+#                                  the C2+ index/log bleed check
+#   ac-classify hook              read a Claude Code/Codex PostToolUse
+#                                  payload from stdin; auto-apply floor
+#                                  raises; block (exit 2) on stale ratings
+set -euo pipefail
+export AC_CMD="${1:-}"; shift || true
+# `python3 -` reads its own program text from the heredoc below, which
+# consumes stdin — so for `hook` (the one command that needs the piped
+# payload), read stdin here in bash first and hand it over via env var.
+if [ "$AC_CMD" = "hook" ]; then
+    export AC_HOOK_PAYLOAD="$(cat)"
+fi
+python3 - "$@" <<'PYEOF'
+import sys, os, json, re, glob, hashlib, subprocess
+
+LEVELS = ("C0", "C1", "C2", "C3")
+
+def fail(msg):
+    print(json.dumps({"ok": False, "error": msg})); sys.exit(1)
+
+def read_fm(path):
+    text = open(path, encoding="utf-8").read()
+    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+    if not m:
+        return None, text
+    fm = {}
+    for line in m.group(1).splitlines():
+        km = re.match(r"^(\w[\w-]*):\s*(.*)$", line)
+        if km:
+            v = km.group(2).strip()
+            if v.startswith("[") and v.endswith("]"):
+                v = [x.strip() for x in v[1:-1].split(",") if x.strip()]
+            fm[km.group(1)] = v
+    return fm, text
+
+def body_of(text):
+    m = re.match(r"^---\n.*?\n---\n", text, re.S)
+    return text[m.end():] if m else text
+
+def content_hash(body):
+    return hashlib.sha256(body.strip().encode("utf-8")).hexdigest()[:12]
+
+# --- Heuristic floor patterns (advisory for rating, authoritative as a
+# raise-only floor — see CONTENT.md's Classification section). Deliberately
+# simple regexes: false positives are cheap (the ratchet only ever raises,
+# never lowers), false negatives are the real risk, so patterns favor recall.
+C3_PATTERNS = [
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    re.compile(r"\bsk-[A-Za-z0-9]{16,}\b"),                    # generic secret-key-shaped token
+    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),                       # AWS access key id shape
+    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"),             # GitHub token shape
+    re.compile(r"\b(?:api[_-]?key|secret|password|token)\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{12,}", re.I),
+]
+C2_PATTERNS = [
+    re.compile(r"\b[\w.+-]+@[\w-]+\.[A-Za-z]{2,}\b"),          # email address
+    re.compile(r"[$€£]\s?\d[\d,]*(?:\.\d{2})?\b"),             # currency figure
+    re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),                      # SSN-shaped
+]
+
+def floor_level(text):
+    for pat in C3_PATTERNS:
+        if pat.search(text):
+            return "C3"
+    for pat in C2_PATTERNS:
+        if pat.search(text):
+            return "C2"
+    return None
+
+def ordinal(level):
+    return LEVELS.index(level) if level in LEVELS else LEVELS.index("C1")
+
+def check_one(path):
+    if not os.path.isfile(path):
+        return {"path": path, "error": "no such file"}
+    fm, text = read_fm(path)
+    if fm is None:
+        return {"path": path, "error": "no frontmatter"}
+    body = body_of(text)
+    classification = fm.get("classification")
+    unrated = classification is None
+    valid = unrated or classification in LEVELS
+    effective = classification if classification in LEVELS else "C1"
+    stored_hash = fm.get("classified-hash")
+    stale = bool(classification) and (not stored_hash or stored_hash != content_hash(body))
+    floor = floor_level(body)
+    floor_violation = bool(floor) and ordinal(effective) < ordinal(floor)
+    entry = {"path": path, "classification": classification, "valid": valid,
+              "unrated": unrated, "stale": stale, "floor": floor,
+              "floor_violation": floor_violation}
+    if floor_violation:
+        entry["implied_level"] = floor
+    return entry
+
+def content_pages():
+    pages = set()
+    for pattern in ("docs/**/*.md", "wiki/entities/*.md", "wiki/concepts/*.md", "wiki/sources/*.md"):
+        pages.update(glob.glob(pattern, recursive=True))
+    return sorted(pages)
+
+def bleed_scan():
+    """C2+ pages whose wiki/index.md or wiki/log.md text itself leaks
+    figures/PII/credentials — independent of the page's own body."""
+    hits = []
+    c2plus_paths = set()
+    for p in content_pages():
+        entry = check_one(p)
+        if "error" in entry:
+            continue
+        level = entry["implied_level"] if entry["floor_violation"] else (entry["classification"] or "C1")
+        if level not in LEVELS:
+            level = "C1"
+        if ordinal(level) >= ordinal("C2"):
+            c2plus_paths.add(p)
+    for loc in ("wiki/index.md", "wiki/log.md"):
+        if not os.path.isfile(loc):
+            continue
+        lines = open(loc, encoding="utf-8").read().splitlines()
+        for i, line in enumerate(lines, start=1):
+            for p in c2plus_paths:
+                if p in line:
+                    detected = floor_level(line)
+                    if detected:
+                        hits.append({"page": p, "location": loc, "line": i,
+                                    "text": line.strip(), "detected": detected})
+    return hits
+
+cmd = os.environ.get("AC_CMD", "")
+args = sys.argv[1:]
+
+if cmd == "check":
+    if not args: fail("usage: ac-classify check <path...>")
+    pages = [check_one(p) for p in args]
+    clean = all("error" not in p and p["valid"] and not p["floor_violation"] for p in pages)
+    print(json.dumps({"ok": True, "clean": clean, "pages": pages}))
+
+elif cmd == "sweep":
+    pages = [check_one(p) for p in content_pages()]
+    bleed = bleed_scan()
+    clean = all(p["valid"] and not p["floor_violation"] for p in pages) and not bleed
+    print(json.dumps({"ok": True, "clean": clean, "pages": pages, "bleed": bleed}))
+
+elif cmd == "hook":
+    raw = os.environ.get("AC_HOOK_PAYLOAD", "")
+    try:
+        payload = json.loads(raw) if raw.strip() else {}
+    except json.JSONDecodeError:
+        print(json.dumps({"ok": True, "skip": True, "reason": "unparseable payload"})); sys.exit(0)
+
+    cwd = payload.get("cwd")
+    if cwd and os.path.isdir(cwd):
+        os.chdir(cwd)
+
+    tool_input = payload.get("tool_input") or {}
+    path = tool_input.get("file_path") or tool_input.get("path")
+    if not path or not path.endswith(".md") or not (path.startswith("docs/") or path.startswith("wiki/")):
+        # Also accept an absolute path under cwd that resolves into docs/ or wiki/.
+        if path:
+            rel = os.path.relpath(path, os.getcwd())
+            if rel.endswith(".md") and (rel.startswith("docs/") or rel.startswith("wiki/")) and not rel.startswith(".."):
+                path = rel
+            else:
+                print(json.dumps({"ok": True, "skip": True})); sys.exit(0)
+        else:
+            print(json.dumps({"ok": True, "skip": True})); sys.exit(0)
+
+    entry = check_one(path)
+    if "error" in entry:
+        print(json.dumps({"ok": True, "skip": True, "reason": entry["error"]})); sys.exit(0)
+
+    if entry["floor_violation"]:
+        level = entry["implied_level"]
+        result = subprocess.run(
+            [".agentic-cms/scripts/ac-page", "classify", path, level],
+            capture_output=True, text=True)
+        if result.returncode != 0:
+            sys.stderr.write(f"ac-classify: floor bump failed for {path}: {result.stderr}\n")
+            sys.exit(2)
+        subprocess.run([".agentic-cms/scripts/ac-log", "append", "classify", path,
+                        f"heuristic floor auto-raised to {level}"], capture_output=True, text=True)
+        print(json.dumps({"ok": True, "auto_raised": True, "path": path, "classification": level}))
+        sys.exit(0)
+
+    if entry["stale"]:
+        reason = (f"{path}: classification is stale (content changed since last rated) — "
+                  f"re-rate against the CONTENT.md rubric with `ac-page classify {path} <level>`.")
+        sys.stderr.write(reason + "\n")
+        print(json.dumps({"decision": "block", "reason": reason}))
+        sys.exit(2)
+
+    print(json.dumps({"ok": True, "clean": True, "path": path}))
+
+else:
+    fail("usage: ac-classify check|sweep|hook")
+PYEOF

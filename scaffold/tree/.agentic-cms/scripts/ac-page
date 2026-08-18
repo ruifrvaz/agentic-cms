@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # ac-page — create pages from templates, read/update frontmatter. JSON on stdout.
-#   ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>] [--status draft|final]
+#   ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>]
+#                [--status draft|final] [--classification C0|C1|C2|C3]
 #   ac-page meta <file.md>          frontmatter as JSON
 #   ac-page touch <file.md>         set updated: to today
 #   ac-page promote <src.md> <dest.md>   move a draft out of drafts/, set status: final, touch updated:
 #   ac-page archive <src.md> <dest.md>   move an item into archive/, set status: archived, touch updated:
+#   ac-page classify <file.md> <C0|C1|C2|C3>   set classification, restamp classified-hash, touch updated:
 set -euo pipefail
 export AC_CMD="${1:-}"; shift || true
 python3 - "$@" <<'PYEOF'
-import sys, os, json, re, datetime
+import sys, os, json, re, datetime, hashlib
 
 TPL_DIR = ".agentic-cms/templates"
 TODAY = datetime.date.today().isoformat()
+LEVELS = ("C0", "C1", "C2", "C3")
 
 def fail(msg):
     print(json.dumps({"ok": False, "error": msg})); sys.exit(1)
@@ -31,11 +34,19 @@ def read_fm(path):
             fm[km.group(1)] = v
     return fm, text
 
+def body_of(text):
+    # Everything after the frontmatter's closing "---" — what classified-hash covers.
+    m = re.match(r"^---\n.*?\n---\n", text, re.S)
+    return text[m.end():] if m else text
+
+def content_hash(body):
+    return hashlib.sha256(body.strip().encode("utf-8")).hexdigest()[:12]
+
 cmd = os.environ.get("AC_CMD", "")
 args = sys.argv[1:]
 
 if cmd == "new":
-    if len(args) < 2: fail("usage: ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>] [--status draft|final]")
+    if len(args) < 2: fail("usage: ac-page new <template> <dest.md> --title <T> [--topic <t>] [--raw-path <p>] [--status draft|final] [--classification C0|C1|C2|C3]")
     tpl_name, dest = args[0], args[1]
     opts = {}
     it = iter(args[2:])
@@ -44,6 +55,8 @@ if cmd == "new":
             opts[a[2:]] = next(it, "")
     if "title" not in opts: fail("--title is required")
     if opts.get("status", "final") not in ("draft", "final"): fail("--status must be draft or final")
+    classification = opts.get("classification", "C1")
+    if classification not in LEVELS: fail(f"--classification must be one of {LEVELS}")
     tpl = os.path.join(TPL_DIR, tpl_name + ".md")
     if not os.path.isfile(tpl): fail(f"template not found: {tpl}")
     if os.path.exists(dest): fail(f"refusing to overwrite existing file: {dest}")
@@ -54,13 +67,40 @@ if cmd == "new":
         "{{TOPIC}}": opts.get("topic", ""),
         "{{RAW_PATH}}": opts.get("raw-path", ""),
         "{{STATUS}}": opts.get("status", "final"),
+        "{{CLASSIFICATION}}": classification,
         "{{DATE}}": TODAY,
     }
     for k, v in subst.items():
         content = content.replace(k, v)
+    # Hash the body as it exists post-substitution (title/date already filled
+    # in), so the stamped hash matches the page's actual initial content —
+    # not a raw template with placeholders still in it.
+    content = content.replace("{{CLASSIFIED_HASH}}", content_hash(body_of(content)))
     os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
     open(dest, "w", encoding="utf-8").write(content)
-    print(json.dumps({"ok": True, "path": dest, "template": tpl_name, "title": opts["title"], "slug": slug}))
+    print(json.dumps({"ok": True, "path": dest, "template": tpl_name, "title": opts["title"],
+                      "slug": slug, "classification": classification}))
+
+elif cmd == "classify":
+    if len(args) != 2: fail("usage: ac-page classify <file.md> <C0|C1|C2|C3>")
+    path, level = args
+    if level not in LEVELS: fail(f"level must be one of {LEVELS}")
+    if not os.path.isfile(path): fail(f"no such file: {path}")
+    fm, text = read_fm(path)
+    if fm is None: fail(f"no frontmatter in {path}")
+    if "classification" in fm:
+        text = re.sub(r"^classification:.*$", f"classification: {level}", text, count=1, flags=re.M)
+    else:
+        text = re.sub(r"\n---\n", f"\nclassification: {level}\n---\n", text, count=1)
+    new_hash = content_hash(body_of(text))
+    if "classified-hash" in fm or re.search(r"^classified-hash:", text, re.M):
+        text = re.sub(r"^classified-hash:.*$", f"classified-hash: {new_hash}", text, count=1, flags=re.M)
+    else:
+        text = re.sub(r"\n---\n", f"\nclassified-hash: {new_hash}\n---\n", text, count=1)
+    text = re.sub(r"^(updated:).*$", rf"\1 {TODAY}", text, count=1, flags=re.M)
+    open(path, "w", encoding="utf-8").write(text)
+    print(json.dumps({"ok": True, "path": path, "classification": level,
+                      "classified-hash": new_hash, "updated": TODAY}))
 
 elif cmd in ("promote", "archive"):
     if len(args) != 2: fail(f"usage: ac-page {cmd} <src.md> <dest.md>")
@@ -98,5 +138,5 @@ elif cmd == "touch":
     print(json.dumps({"ok": True, "path": args[0], "updated": TODAY}))
 
 else:
-    fail("usage: ac-page new|meta|touch|promote|archive")
+    fail("usage: ac-page new|meta|touch|promote|archive|classify")
 PYEOF

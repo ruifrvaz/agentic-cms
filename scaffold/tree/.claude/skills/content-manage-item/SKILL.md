@@ -38,14 +38,21 @@ below for when it's ready to graduate.
    .agentic-cms/scripts/ac-search <subject> <synonyms>
    ```
    If a page for this subject exists, extend it (or use `content-add-notes`).
-3. **Create from template** (kebab-case filename, no dates in the name):
+3. **Rate, then create from template** (kebab-case filename, no dates in
+   the name): before creating the page, judge its confidentiality against
+   the C0–C3 scale in `CONTENT.md`'s Classification section — you likely
+   already know the content you're about to write, so rate against that,
+   not the empty template.
    ```sh
-   .agentic-cms/scripts/ac-page new doc docs/<topic>/<item>.md --title "<Title>" --topic <topic>
+   .agentic-cms/scripts/ac-page new doc docs/<topic>/<item>.md --title "<Title>" --topic <topic> --classification <C0|C1|C2|C3>
    ```
-   **Draft mode**: target `docs/<topic>/drafts/<item>.md` instead, and add
-   `--status draft` (default is `final`). Then write the real content
+   Omit `--classification` only for genuinely unremarkable content (default
+   C1). **Draft mode**: target `docs/<topic>/drafts/<item>.md` instead, and
+   add `--status draft` (default is `final`). Then write the real content
    (judgment step): 2-3 sentence Summary, the body, frontmatter `tags:` and
-   `sources:` (raw paths it derives from).
+   `sources:` (raw paths it derives from). If the content you actually wrote
+   turns out more sensitive than your initial rating, re-rate now:
+   `ac-page classify <path> <level>`.
 
    **Draft mode stops here** — do not run steps 4-5 yet; a draft has no wiki
    footprint until it's promoted.
@@ -60,10 +67,16 @@ below for when it's ready to graduate.
    ```sh
    .agentic-cms/scripts/ac-index add topics docs/<topic>/<item>.md "<one-line summary>"
    .agentic-cms/scripts/ac-log append new-item "<topic>/<item>"
-   .agentic-cms/scripts/ac-index check && .agentic-cms/scripts/ac-links check
+   .agentic-cms/scripts/ac-index check && .agentic-cms/scripts/ac-links check && .agentic-cms/scripts/ac-classify check docs/<topic>/<item>.md
    ```
-   Both must report `"clean": true` before finishing. Also add the item to the
-   topic's `README.md` item list.
+   All three must report `"clean": true` before finishing. `ac-classify
+   check` is the guaranteed fallback for platforms/setups where the
+   post-tool-use hook isn't installed or can't block — it re-runs the exact
+   same engine the hook already ran, so on a healthy setup this is a cheap
+   confirmation, not new work. A `floor_violation` here means content was
+   added after the last edit (`ac-page classify` to raise); `stale` means
+   the write happened but rating wasn't reconfirmed. Also add the item to
+   the topic's `README.md` item list.
 
 ## Promoting a draft
 
@@ -102,6 +115,8 @@ below for when it's ready to graduate.
    the old path — that is the point: update or remove each reference (and
    `ac-page touch` every page you edit) so active content stops leaning on
    retired material. Both checks must report `"clean": true` before finishing.
+   Archiving doesn't change a page's body, so its `classified-hash` stays
+   valid — no re-rating needed here.
 
 **Un-archiving** is the exact reverse: `ac-page promote
 docs/<topic>/archive/<item>.md docs/<topic>/<item>.md` (sets `status: final`),
@@ -117,3 +132,6 @@ re-file the index entry back (`ac-index remove` + `ac-index add topics ...`),
   orphan check by design — this is expected, not a gap to "fix" during promotion.
 - An archived item is the opposite: it stays indexed (under `## Archived`) and
   logged. Never delete content to retire it — archive it.
+- Ratchet: you may raise a page's classification; only the user may lower one.
+  `ac-page classify` will let you set any level mechanically — the ratchet is
+  a rule you follow, not something the tool enforces for you.

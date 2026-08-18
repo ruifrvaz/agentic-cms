@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# .agentic-cms/hooks/pre-commit — classification gate on staged content.
+# Wired into .git/hooks/pre-commit by `agentic-cms init` (fresh install,
+# managed append to an existing hook, or a report-only note under
+# core.hooksPath — see scaffold/githook.go).
+#
+# Runs the same ac-classify engine every other integration point uses —
+# checks a materialized snapshot of the STAGED tree (via `git checkout-index`),
+# not the working tree, so it judges exactly what would be committed. No
+# detection logic lives here: this script only interprets ac-classify's
+# JSON and decides block vs. warn.
+#
+# BLOCKs on: invalid classification values, heuristic floor violations,
+# C2+ content leaking into wiki/index.md or wiki/log.md.
+# WARNs (non-blocking) on: stale ratings, unrated pages.
+# Escape hatch: git commit --no-verify (content-lint reports what slipped
+# through on the next sweep).
+set -euo pipefail
+
+if ! git diff --cached --name-only --diff-filter=ACM | \
+        grep -qE '^(docs/|wiki/(entities|concepts|sources)/)'; then
+    exit 0
+fi
+
+TMPROOT="$(mktemp -d)"
+trap 'rm -rf "$TMPROOT"' EXIT
+git checkout-index -a --prefix="$TMPROOT/"
+
+if [ ! -x "$TMPROOT/.agentic-cms/scripts/ac-classify" ]; then
+    echo "pre-commit: .agentic-cms/scripts/ac-classify not found in the staged tree — skipping classification gate" >&2
+    exit 0
+fi
+
+RESULT="$(cd "$TMPROOT" && .agentic-cms/scripts/ac-classify sweep)"
+
+python3 - "$RESULT" <<'PYEOF'
+import json, sys
+
+result = json.loads(sys.argv[1])
+blocking = []
+warnings = []
+
+for p in result["pages"]:
+    if "error" in p:
+        continue
+    if not p["valid"]:
+        blocking.append(f'{p["path"]}: invalid classification value')
+    if p["floor_violation"]:
+        level = p["classification"] or "C1"
+        blocking.append(
+            f'{p["path"]}: rated {level} but content implies at least '
+            f'{p["implied_level"]} — raise it with '
+            f'`ac-page classify {p["path"]} {p["implied_level"]}`')
+    if p["stale"]:
+        warnings.append(f'{p["path"]}: classification is stale (content changed since last rated)')
+    if p["unrated"]:
+        warnings.append(f'{p["path"]}: no classification field (defaults to C1) — rate it explicitly')
+
+for b in result["bleed"]:
+    blocking.append(
+        f'{b["location"]}:{b["line"]}: leaks {b["detected"]}-level content '
+        f'from {b["page"]} — use an opaque summary instead')
+
+for w in warnings:
+    print(f"pre-commit WARNING: {w}", file=sys.stderr)
+
+if blocking:
+    print("pre-commit: classification gate BLOCKED this commit:", file=sys.stderr)
+    for b in blocking:
+        print(f"  - {b}", file=sys.stderr)
+    print("Fix the above, or bypass with `git commit --no-verify` "
+          "(content-lint will still report it on the next sweep).", file=sys.stderr)
+    sys.exit(1)
+PYEOF

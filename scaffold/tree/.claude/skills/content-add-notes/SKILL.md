@@ -30,13 +30,36 @@ contract: `.agentic-cms/scripts/README.md`.
    or in pages that reference it (`ac-page meta <file>` → `refs:`, plus
    `ac-search` for inbound links)? If yes, update those in place and flag
    superseded claims — a contradicting note must not just sit at the bottom.
-4. **Touch and log** (deterministic):
+4. **Re-rate, touch, log, verify** (deterministic + one judgment call): a
+   note can make a page more sensitive than it was — a "note that changed"
+   check on classification, every time, not just when it looks obviously
+   sensitive. Compare the note against `CONTENT.md`'s C0–C3 rubric:
    ```sh
-   .agentic-cms/scripts/ac-page touch <file>          # every file you edited
-   .agentic-cms/scripts/ac-log append notes "<page>"
+   .agentic-cms/scripts/ac-page meta <file>            # see the current classification
    ```
+   If the note pushes the page's sensitivity higher, raise it — **never
+   lower** a rating here; only the user does that:
+   ```sh
+   .agentic-cms/scripts/ac-page classify <file> <higher-level>
+   ```
+   (`ac-page classify` also touches `updated:` and restamps the hash, so
+   skip a separate `ac-page touch` for a re-rated file.) Then, for every
+   edited file that was **not** re-rated:
+   ```sh
+   .agentic-cms/scripts/ac-page touch <file>
+   ```
+   Finally, log and verify:
+   ```sh
+   .agentic-cms/scripts/ac-log append notes "<page>"
+   .agentic-cms/scripts/ac-classify check <every file touched>
+   ```
+   `"clean": true` confirms the rating (raised or unchanged) still matches
+   the page as it now stands — this is the guaranteed check for setups
+   where the post-tool-use hook isn't installed or can't block.
 
 ## Rules
 
 - Notes are the user's voice — record them faithfully, lightly edited for clarity.
 - Small notes do not need index updates; only log them.
+- Classification only ever moves up here — raise on a more-sensitive note,
+  otherwise leave it. Lowering a rating requires the user explicitly.

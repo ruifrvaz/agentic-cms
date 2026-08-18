@@ -22,11 +22,15 @@ var wantFiles = []string{
 	".agentic-cms/scripts/ac-links",
 	".agentic-cms/scripts/ac-inventory",
 	".agentic-cms/scripts/ac-search",
+	".agentic-cms/scripts/ac-classify",
+	".agentic-cms/hooks/pre-commit",
 	".agentic-cms/templates/doc.md",
 	".agentic-cms/templates/entity.md",
 	".agentic-cms/templates/concept.md",
 	".agentic-cms/templates/source.md",
 	".agentic-cms/templates/topic.md",
+	".claude/settings.json",
+	".codex/hooks.json",
 	".claude/skills/content-new/SKILL.md",
 	".claude/skills/content-manage-item/SKILL.md",
 	".claude/skills/content-query/SKILL.md",
@@ -86,6 +90,17 @@ func TestInstallGreenfield(t *testing.T) {
 	}
 	if fi.Mode()&0o111 == 0 {
 		t.Error(".agentic-cms/scripts/ac-index is not executable")
+	}
+	// The versioned git hook script must be executable too — it lives outside
+	// .agentic-cms/scripts/, a distinct directory the installer's mode logic must
+	// also cover (this regressed once: it shipped 0644 and .git/hooks/pre-commit's
+	// `[ -x ... ]` guard silently no-op'd the whole gate).
+	fi, err = os.Stat(filepath.Join(dir, ".agentic-cms", "hooks", "pre-commit"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode()&0o111 == 0 {
+		t.Error(".agentic-cms/hooks/pre-commit is not executable")
 	}
 }
 

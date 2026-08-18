@@ -17,13 +17,24 @@ contract: `.agentic-cms/scripts/README.md`.
 .agentic-cms/scripts/ac-links check     # broken links → fix each, ac-page touch the file
 .agentic-cms/scripts/ac-index check     # drift → ac-index remove / ac-index add per finding
 .agentic-cms/scripts/ac-inventory       # raw_uningested → report as import candidates
+.agentic-cms/scripts/ac-classify sweep  # classification pass — see below
 ```
 
 Also verify frontmatter integrity: `ac-page meta` on any page you touch; fix
 missing/malformed frontmatter fields against the templates.
 
-Re-run `ac-links check` and `ac-index check` after fixing — both must report
-`"clean": true` before moving on.
+**Classification** (`ac-classify sweep` — this is content-lint's periodic
+catch-all for whatever the write-time hooks/gates never saw: pre-existing
+drift, edits committed with `--no-verify`, or edits made where no hook was
+installed):
+- `floor_violation` entries fix directly, no judgment needed — this
+  mirrors exactly what the post-tool-use hook already does automatically,
+  so treat it the same way: `ac-page classify <path> <implied_level>`.
+- `pages` with `"valid": false` (a hand-edited or corrupted enum value):
+  fix directly to the nearest sensible level by reading the page.
+
+Re-run `ac-links check`, `ac-index check`, and `ac-classify sweep` after
+fixing — all three must report `"clean": true` before moving on.
 
 ## Phase 2 — structural (fix directly, note in report)
 
@@ -36,6 +47,20 @@ Re-run `ac-links check` and `ac-index check` after fixing — both must report
 - **Missing pages**: concepts/entities recurring across ≥2 pages (spot via
   `ac-search`) that lack their own page — list as candidates, create only with
   user approval.
+- **Stale ratings** (`ac-classify sweep`'s `stale: true` entries): re-read
+  the page against `CONTENT.md`'s C0–C3 rubric and re-rate
+  (`ac-page classify <path> <level>`). Only apply a raise directly — if the
+  correct rating would *lower* what's currently there, flag it for the
+  user instead of touching it (only the user may lower a rating).
+- **Unrated pages** (`unrated: true` — pre-existing content from before
+  this feature, absent field defaults to C1): rate against the rubric and
+  set explicitly, same raise-only judgment as stale ratings above.
+- **C2+ bleed** (`ac-classify sweep`'s `bleed` array): a `wiki/index.md` or
+  `wiki/log.md` line is leaking figures, PII, or quoted content from the
+  page it describes — this is the exact failure mode classification
+  exists to prevent, flag it prominently. Rewrite the leaking line to an
+  opaque summary (judgment call, not mechanical); if the leak itself
+  suggests the summary page's own rating needs raising, do that too.
 
 ## Phase 3 — content-level (judgment: report, do not silently fix)
 

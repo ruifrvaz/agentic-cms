@@ -8,6 +8,8 @@ updated: {{DATE}}
 sources: []
 refs: []
 status: {{STATUS}}
+classification: {{CLASSIFICATION}}
+classified-hash: {{CLASSIFIED_HASH}}
 ---
 
 # {{TITLE}}
