@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-08-18"
 mode: Assisted
 started: "2026-08-19"
+pr: 8
 ---
 
 # Always overwrite scaffolding logic files on init/update
@@ -68,28 +69,30 @@ Fix scope is intentionally narrow: no drift detection, no checksums, no diffing.
 
 ## Acceptance Criteria
 
-- [ ] `scaffold.Install()` always overwrites files under `.claude/skills/`, `.claude/agents/`, `.agentic-cms/templates/`, `.agentic-cms/scripts/`, `.agentic-cms/hooks/`, `.codex/`, even when a locally-modified copy already exists at the target path.
-- [ ] User-content paths (`wiki/`, `raw/`, `CONTENT.md`, `docs/`, `.agentic-cms/VERSION`) and `CLAUDE.md`'s merge-block behavior remain unchanged — never overwritten.
-- [ ] `Result` reports overwritten framework files distinctly (not as `Skipped`), and `agentic-cms init` CLI output reflects this.
-- [ ] `TestInstallIdempotent` still passes unmodified.
-- [ ] New test confirms a locally-modified framework-owned file is reset to the embedded version on re-install.
-- [ ] `make test` passes.
+- [x] `scaffold.Install()` always overwrites files under `.claude/skills/`, `.claude/agents/`, `.agentic-cms/templates/`, `.agentic-cms/scripts/`, `.agentic-cms/hooks/`, `.codex/`, even when a locally-modified copy already exists at the target path.
+- [x] User-content paths (`wiki/`, `raw/`, `CONTENT.md`, `docs/`, `.agentic-cms/VERSION`) and `CLAUDE.md`'s merge-block behavior remain unchanged — never overwritten.
+- [x] `Result` reports overwritten framework files distinctly (not as `Skipped`), and `agentic-cms init` CLI output reflects this.
+- [x] `TestInstallIdempotent` still passes unmodified.
+- [x] New test confirms a locally-modified framework-owned file is reset to the embedded version on re-install.
+- [x] `make test` passes.
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Added `frameworkOwnedPrefixes`/`isFrameworkOwned()` to `scaffold/embed.go`, classifying scaffold-tree paths into framework-owned (always overwrite) vs. user-content (skip-if-exists, unchanged).
+- Reworked the `fs.WalkDir` callback's existing-file branch: skip only applies when the file exists AND is not framework-owned; otherwise the write proceeds and the result is recorded in a new `Result.Updated` bucket instead of `Result.Skipped`.
+- Extended `Result` and `Print()` with the `Updated` bucket; updated `main.go`'s `Done: N created, M updated, K merged, J skipped.` summary line to match.
 
 **Decisions made:**
-- TBD
+- No drift/checksum detection, per the task's explicit scope — framework-owned files are unconditionally overwritten on every install run, regardless of local edits.
+- Reused the existing `isScriptDir`-style prefix-matching pattern already in `Install()` for the executable-mode check, for consistency.
+- `.claude/settings.json` stays outside the framework-owned bucket (skip-if-exists) — it's user-configurable, not scaffolding logic, and was never in scope per the task's bucket list.
 
 **Blockers encountered:**
-- TBD
+- None.
 
 **Follow-up identified:**
-- TBD
+- None — task 008 (global classification scanner) and task 003 (Register mode) are unrelated to this fix and remain as previously scoped.
 
 ## Files to Create / Modify
 
