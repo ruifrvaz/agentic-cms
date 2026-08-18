@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-08-16"
 mode: Assisted
 started: "2026-08-18"
-pr: 5
+completed: "2026-08-18"
 ---
 
 # First-class content classification (auto CIA rating)
