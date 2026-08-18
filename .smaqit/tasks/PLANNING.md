@@ -6,6 +6,7 @@
 |----|-------|--------|-------|
 | 003 | Register mode for reference files | Not Started | Lightweight `content-import` Register mode: wiki/sources sidecar + index + log for archival/reference files (e.g. invoices), no markdown conversion; start after 002 merges |
 | 008 | Global classification scanner | Not Started | Global Claude Code skill (`~/.claude/skills/agentic-cms-classify/`, installs on first binary run) + optional warning-gated `agentic-cms hooks enable-global` git pre-commit hook via `core.hooksPath`, chaining into per-project `.agentic-cms/hooks/pre-commit` when present. Motivated by a real incident: this repo (never `init`-ed on itself) had zero coverage when a direct git commit landed real PII, caught only by manual review. Depends on task 005 (Completed, v0.5.0). NOTE: will supersede task 006's "no global agent/skill directories to seed" design decision — revisit that bullet |
+| 009 | Surface classification feature in README | In Progress | Give the C0-C3 classification feature headline visibility in `README.md`: mention the CIA triad explicitly, add a dedicated Classification section with an impactful "why it matters" explanation for agent-driven content synthesis. Docs-only |
 
 ## Completed
 
