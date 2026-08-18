@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-08-18"
 mode: Assisted
 started: "2026-08-18"
+pr: 4
 ---
 
 # Rename .agentic-cms/bin to .agentic-cms/scripts
@@ -127,28 +128,49 @@ library, or service dependency is introduced or at risk.
 
 ## Acceptance Criteria
 
-- [ ] `scaffold/tree/.agentic-cms/bin/` no longer exists; `scaffold/tree/.agentic-cms/scripts/` contains all 7 files (`README.md` + 6 `ac-*` scripts), moved via `git mv`
-- [ ] Zero remaining `.agentic-cms/bin` references in any *living* file (CONTENT.md, all skills, all agents, scaffold/embed.go, scaffold/scaffold_test.go, scripts/smoke-test-installer.sh, root README.md)
-- [ ] Historical files (`.smaqit/compendium.md`, `.smaqit/history/*`, `CHANGELOG.md`, completed task files 002/004) are untouched — still say `bin/`, accurately describing what shipped at the time
-- [ ] `scaffold/embed.go`'s executable-mode logic marks `.agentic-cms/scripts/*` files executable (not `.agentic-cms/bin/*`)
-- [ ] `go vet ./...`, `go test ./...`, and `make smoke-test` all pass against the renamed paths
-- [ ] A fresh `agentic-cms init` into an empty directory installs `.agentic-cms/scripts/ac-index` (executable) and no `.agentic-cms/bin/` at all
+- [x] `scaffold/tree/.agentic-cms/bin/` no longer exists; `scaffold/tree/.agentic-cms/scripts/` contains all 7 files (`README.md` + 6 `ac-*` scripts), moved via `git mv`
+- [x] Zero remaining `.agentic-cms/bin` references in any *living* file (CONTENT.md, all skills, all agents, scaffold/embed.go, scaffold/scaffold_test.go, scripts/smoke-test-installer.sh, root README.md)
+- [x] Historical files (`.smaqit/compendium.md`, `.smaqit/history/*`, `CHANGELOG.md`, completed task files 002/004) are untouched — still say `bin/`, accurately describing what shipped at the time
+- [x] `scaffold/embed.go`'s executable-mode logic marks `.agentic-cms/scripts/*` files executable (not `.agentic-cms/bin/*`)
+- [x] `go vet ./...`, `go test ./...`, and `make smoke-test` all pass against the renamed paths
+- [x] A fresh `agentic-cms init` into an empty directory installs `.agentic-cms/scripts/ac-index` (executable) and no `.agentic-cms/bin/` at all
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- `git mv scaffold/tree/.agentic-cms/bin scaffold/tree/.agentic-cms/scripts` first
+  (tracked as a clean rename for all 7 files), then a single literal-string
+  sweep (`.agentic-cms/bin` → `.agentic-cms/scripts`) across every living
+  file that referenced it
+- Historical files (compendium, session history, CHANGELOG past entries)
+  deliberately excluded from the sweep — they describe what was true at
+  the time and would be falsified by rewriting
 
 **Decisions made:**
-- TBD
+- Tier 1 scope only (rename scaffold source; no update-time migration for
+  already-installed projects) and sequencing before task 005 completes —
+  both per explicit user decision during scoping
+- `.agentic-cms/hooks/` (task-005-only, not yet on main) needs no
+  equivalent rename — it's a real semantic name, doesn't collide with any
+  IDE build-output convention
 
 **Blockers encountered:**
-- TBD
+- A literal-string grep for `.agentic-cms/bin` missed two occurrences in
+  `scaffold_test.go` built via `filepath.Join(dir, ".agentic-cms", "bin",
+  ...)` — the path is split across separate Go string arguments, not one
+  literal. Caught by `TestInstallGreenfield` failing after the first sweep;
+  fixed with a follow-up grep for standalone `"bin"` literals
 
 **Follow-up identified:**
-- TBD
+- Task 005's worktree (uncommitted, ~150 of its own `.agentic-cms/bin`
+  references: `ac-classify`, two agent-hook configs, the git pre-commit
+  gate, skill edits) needs its own reconciliation pass against this
+  renamed baseline before it can complete — deferred to that task per
+  the Notes section, not done here
+- Tier 2 (update-time migration for already-installed projects, e.g. the
+  downstream project referenced in other task notes) remains an open gap,
+  same class as task 004's unresolved skill-rename gap, tracked generically
+  under the README's "scaffold diffing" roadmap item
 
 ## Files to Create / Modify
 
