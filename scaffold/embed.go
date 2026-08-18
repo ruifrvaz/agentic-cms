@@ -26,17 +26,44 @@ const (
 	markerEnd   = "<!-- agentic-cms:end -->"
 )
 
+// frameworkOwnedPrefixes lists scaffold paths that are versioned framework
+// logic — skills, agents, templates, scripts, hooks — rather than user-owned
+// project content. Install always overwrites these on every run so a project
+// stays in sync with the installed agentic-cms release, even if the file was
+// locally edited.
+var frameworkOwnedPrefixes = []string{
+	filepath.FromSlash(".claude/skills/"),
+	filepath.FromSlash(".claude/agents/"),
+	filepath.FromSlash(".agentic-cms/templates/"),
+	filepath.FromSlash(".agentic-cms/scripts/"),
+	filepath.FromSlash(".agentic-cms/hooks/"),
+	filepath.FromSlash(".codex/"),
+}
+
+func isFrameworkOwned(rel string) bool {
+	for _, prefix := range frameworkOwnedPrefixes {
+		if strings.HasPrefix(rel, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 // Result summarizes what Install did.
 type Result struct {
 	Created []string
+	Updated []string
 	Skipped []string
 	Merged  []string
 }
 
-// Install writes the scaffold into dir. It is non-destructive: existing files
-// are never overwritten (they are reported as skipped). CLAUDE.md gets special
-// treatment: if it already exists and does not contain the agentic-cms block,
-// the block is appended; otherwise it is left alone.
+// Install writes the scaffold into dir. User-owned content files are
+// non-destructive: an existing file is never overwritten (it is reported as
+// skipped). Framework-owned scaffolding logic — skills, agents, templates,
+// scripts, hooks — is always overwritten with the embedded version, even if
+// it already exists, so that init/update actually refreshes it. CLAUDE.md
+// gets special treatment: if it already exists and does not contain the
+// agentic-cms block, the block is appended; otherwise it is left alone.
 func Install(dir string) (*Result, error) {
 	res := &Result{}
 	date := time.Now().Format("2006-01-02")
@@ -76,7 +103,9 @@ func Install(dir string) (*Result, error) {
 			return installClaudeMD(target, content, res)
 		}
 
-		if _, statErr := os.Stat(target); statErr == nil {
+		_, statErr := os.Stat(target)
+		exists := statErr == nil
+		if exists && !isFrameworkOwned(rel) {
 			res.Skipped = append(res.Skipped, rel+" (exists)")
 			return nil
 		}
@@ -93,7 +122,11 @@ func Install(dir string) (*Result, error) {
 		if err := os.WriteFile(target, []byte(content), mode); err != nil {
 			return err
 		}
-		res.Created = append(res.Created, rel)
+		if exists {
+			res.Updated = append(res.Updated, rel)
+		} else {
+			res.Created = append(res.Created, rel)
+		}
 		return nil
 	})
 	if err != nil {
@@ -132,6 +165,9 @@ func installClaudeMD(target, block string, res *Result) error {
 func (r *Result) Print() {
 	for _, f := range r.Created {
 		fmt.Printf("  created  %s\n", f)
+	}
+	for _, f := range r.Updated {
+		fmt.Printf("  updated  %s\n", f)
 	}
 	for _, f := range r.Merged {
 		fmt.Printf("  merged   %s\n", f)

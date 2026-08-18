@@ -104,8 +104,8 @@ func runInit(dir string) error {
 	res.Print()
 
 	fmt.Println()
-	fmt.Printf("Done: %d created, %d merged, %d skipped.\n",
-		len(res.Created), len(res.Merged), len(res.Skipped))
+	fmt.Printf("Done: %d created, %d updated, %d merged, %d skipped.\n",
+		len(res.Created), len(res.Updated), len(res.Merged), len(res.Skipped))
 	fmt.Println()
 	fmt.Println("Next steps:")
 	fmt.Println("  - Read CONTENT.md — the schema your agent follows")

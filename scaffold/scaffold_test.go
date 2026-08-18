@@ -127,6 +127,47 @@ func TestInstallIdempotent(t *testing.T) {
 	}
 }
 
+func TestInstallOverwritesFrameworkFiles(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := Install(dir); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(dir, ".claude", "skills", "content-lint", "SKILL.md")
+	original, err := os.ReadFile(marker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(marker, []byte("locally edited content"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Install(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.FromSlash(".claude/skills/content-lint/SKILL.md")
+	found := false
+	for _, f := range res.Updated {
+		if f == want {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected %s in Updated, got Updated=%v Skipped=%v", want, res.Updated, res.Skipped)
+	}
+	for _, f := range res.Skipped {
+		if f == want+" (exists)" {
+			t.Errorf("%s reported as skipped, should have been overwritten", want)
+		}
+	}
+	b, err := os.ReadFile(marker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != string(original) {
+		t.Error("framework-owned file was not reset to the embedded version on re-install")
+	}
+}
+
 func TestInstallBrownfieldClaudeMD(t *testing.T) {
 	dir := t.TempDir()
 	existing := "# My project\n\nExisting instructions.\n"
