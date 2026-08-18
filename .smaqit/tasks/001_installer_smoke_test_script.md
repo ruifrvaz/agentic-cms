@@ -1,10 +1,12 @@
-# Installer smoke test script
+---
+status: Completed
+created: "2026-07-31"
+mode: Assisted
+started: "2026-07-31"
+completed: "2026-07-31"
+---
 
-**Status:** Completed
-**Created:** 2026-07-31
-**Started:** 2026-07-31
-**Completed:** 2026-07-31
-**Mode:** Assisted
+# Installer smoke test script
 
 ## Description
 

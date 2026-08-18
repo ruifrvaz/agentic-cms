@@ -1,10 +1,12 @@
-# Draft content state
+---
+status: Completed
+created: "2026-08-14"
+mode: Assisted
+started: "2026-08-15"
+completed: "2026-08-15"
+---
 
-**Status:** Completed
-**Mode:** Assisted
-**Created:** 2026-08-14
-**Started:** 2026-08-15
-**Completed:** 2026-08-15
+# Draft content state
 
 ## Description
 
