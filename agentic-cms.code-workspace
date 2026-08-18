@@ -3,6 +3,10 @@
     {
       "name": "main",
       "path": "."
+    },
+    {
+      "name": "task/009-surface-classification-feature-in-readme",
+      "path": "../agentic-cms-wt-task-009-surface-classification-feature-in-readme"
     }
   ],
   "settings": {
