@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-18
+
 ### Added
 
-- **Shell installer bootstrap** (pending v0.6.0 · PR #6) — adds `install.sh`, a `curl | bash` bootstrap that downloads the latest release binary with no Go toolchain required (`AGENTIC_CMS_VERSION` pins a version); `agentic-cms update` now resolves the project root from any subdirectory instead of only the cwd; README restructured to mirror `ruifrvaz/smaqit`'s section style.
+- **Shell installer bootstrap** — adds `install.sh`, a `curl | bash` bootstrap that downloads the latest release binary with no Go toolchain required (`AGENTIC_CMS_VERSION` pins a version); `agentic-cms update` now resolves the project root from any subdirectory instead of only the cwd; README restructured to mirror `ruifrvaz/smaqit`'s section style.
 
 ## [0.5.0] - 2026-08-18
 
