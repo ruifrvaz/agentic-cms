@@ -5,7 +5,8 @@
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
 | 003 | Register mode for reference files | Not Started | Lightweight `content-import` Register mode: wiki/sources sidecar + index + log for archival/reference files (e.g. invoices), no markdown conversion; start after 002 merges |
-| 006 | Shell installer bootstrap (no Go dependency) | In Progress | `curl \| bash` `install.sh` at repo root, modeled selectively on `smaqit-extensions/install.sh`; adopts ancestor-dir resolution into `agentic-cms update` only — no global-install, `--scope`, `uninstall`, or multi-agent global directory surface |
+| 006 | Shell installer bootstrap (no Go dependency) | In Progress | `curl \| bash` `install.sh` at repo root, modeled selectively on `smaqit-extensions/install.sh`; adopts ancestor-dir resolution into `agentic-cms update` only — no global-install, `--scope`, `uninstall`, or multi-agent global directory surface. NOTE: its "no global agent/skill directories to seed" design decision is superseded by task 008 — revisit that bullet |
+| 008 | Global classification scanner | Not Started | Global Claude Code skill (`~/.claude/skills/agentic-cms-classify/`, installs on first binary run) + optional warning-gated `agentic-cms hooks enable-global` git pre-commit hook via `core.hooksPath`, chaining into per-project `.agentic-cms/hooks/pre-commit` when present. Motivated by a real incident: this repo (never `init`-ed on itself) had zero coverage when a direct git commit landed real PII, caught only by manual review. Depends on task 005 (Completed, v0.5.0) |
 
 ## Completed
 
