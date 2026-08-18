@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-08-18"
 mode: Assisted
 started: "2026-08-18"
-pr: 6
+completed: "2026-08-18"
 ---
 
 # Shell installer bootstrap (no Go dependency)
