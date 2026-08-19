@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-08-19"
 started: "2026-08-19"
+completed: "2026-08-19"
 mode: Assisted
-pr: 9
 ---
 
 # Classification adoption gaps (first real-world rollout)
