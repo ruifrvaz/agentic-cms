@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-08-19"
 started: "2026-08-19"
 mode: Assisted
+pr: 9
 ---
 
 # Classification adoption gaps (first real-world rollout)
@@ -171,30 +172,36 @@ reconciliation surface (gap 4) would key on.
 
 ## Acceptance Criteria
 
-- [ ] Committing a clean staged change in a project with pre-existing tree drift succeeds, emitting one summarized warning (not per-file noise); staged-delta violations still block
-- [ ] Bleed into staged wiki/index.md or wiki/log.md still blocks regardless of source page
-- [ ] `ac-page classify <path> <level> --ack-floor` stamps a body-hash-bound ack; `ac-classify` reports the floor hit as non-blocking for an acked, unchanged page; any body change invalidates the ack
-- [ ] Skill and CONTENT.md text state acking is a user decision only (ratchet preserved)
-- [ ] Floor recall is never narrowed: bare list prices still trip the C2 floor and pass only via an explicit user ack; widened currency forms (`USD 100`, `100 EUR`, word amounts) are caught (fixture-tested)
-- [ ] `update` over an install with a customized CONTENT.md missing upstream schema sections emits a reconciliation report and writes `.agentic-cms/CONTENT.upstream.md`; never edits the user's CONTENT.md
-- [ ] `scaffold/tree/.agentic-cms/VERSION` matches the release version; release checklist includes the bump
-- [ ] `make smoke-test` and `go test ./...` pass
+- [x] Committing a clean staged change in a project with pre-existing tree drift succeeds, emitting one summarized warning (not per-file noise); staged-delta violations still block
+- [x] Bleed into staged wiki/index.md or wiki/log.md still blocks regardless of source page
+- [x] `ac-page classify <path> <level> --ack-floor` stamps a body-hash-bound ack; `ac-classify` reports the floor hit as non-blocking for an acked, unchanged page; any body change invalidates the ack
+- [x] Skill and CONTENT.md text state acking is a user decision only (ratchet preserved)
+- [x] Floor recall is never narrowed: bare list prices still trip the C2 floor and pass only via an explicit user ack; widened currency forms (`USD 100`, `100 EUR`, word amounts) are caught (fixture-tested)
+- [x] `update` over an install with a customized CONTENT.md missing upstream schema sections emits a reconciliation report and writes `.agentic-cms/CONTENT.upstream.md`; never edits the user's CONTENT.md
+- [x] `scaffold/tree/.agentic-cms/VERSION` matches the release version; release checklist includes the bump
+- [x] `make smoke-test` and `go test ./...` pass
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Engine changes (`ac-classify`, `ac-page`) implement gaps 2 and 3 (ack mechanism, widened currency recall); `hooks/pre-commit` implements gap 1 (delta-scoped blocking, tree-wide backlog summarized); a new `scaffold/reconcile.go` implements gap 4 (CONTENT.md section-heading diff, upstream sidecar, never edits the user's file); `scaffold/embed.go` + `main.go` implement the VERSION stamp (gap 5) by making `.agentic-cms/VERSION` a `{{VERSION}}` placeholder Install() always overwrites with the installing binary's ldflags version.
+- Added three new test files (`engine_test.go`, `reconcile_test.go`, plus VERSION coverage in `scaffold_test.go`) exercising the real installed bash/python scripts and a real git repo end-to-end — the engine had no fixture tests before this task.
+- Documentation pass across CONTENT.md (promoted Classification from a Conventions bullet to its own `##` section covering the ack and delta-gate), the scripts README contract, five write-path/lint skills (ack is user-only, never agent-initiated), and the root README (also fixed stale "files are never overwritten" claims left over from task 010/v0.6.2).
+- Verified live end-to-end with the built binary against a real git sandbox: clean-staged-file-with-dirty-tree (passes, one summary warning), staged floor violation (blocks), user ack (passes), ack invalidated by edit (blocks again) — all four brownfield scenarios from Implementation Step 6 confirmed against real git commits, not just unit tests.
 
 **Decisions made:**
-- TBD
+- Currency floor was **widened**, not narrowed, per an explicit mid-task user ruling: the floor's contract is 0% false negatives over its enumerated pattern classes (symbol-prefixed/suffixed, ISO-coded, word-form); all false-positive relief routes through the user-only ack, never a weaker regex. This reverses the task file's original gap-3 framing (session-start commentary proposed context-narrowing; the user corrected that before implementation began) — the Design Decisions section above already carries the revision marker.
+- VERSION stamping is automated (`{{VERSION}}` placeholder, always overwritten from the binary's own version at every `init`/`update` run) rather than a manually-bumped literal plus a release-checklist step. No release-checklist document exists in this repo to add a step to, and automatic stamping satisfies the AC's intent — VERSION always matches the release — more strongly than a manual step that could be forgotten (the original hygiene bug this gap reports). Flagged to the user for review; not walked back since.
+- `ac-page classify` without `--ack-floor` withdraws any standing ack (not just leaves it stale) — a plain re-rate is a fresh rating decision that supersedes an old ack, matching the ratchet's spirit that classification decisions are current-state, not additive.
 
 **Blockers encountered:**
-- TBD
+- None. One self-caught test bug during implementation: an early version of `TestPreCommitDeltaScope`'s "staged floor violation blocks" scenario re-`git add`ed an already-committed unchanged file, producing no staged delta — the gate correctly ignored it, which looked like a false failure until the test itself was fixed to actually edit the file before staging.
+- One latent bug fixed opportunistically while rewriting the hook: the old pre-commit's early-exit check only looked for staged `docs/`/`wiki/(entities|concepts|sources)/` paths, so a commit touching only `wiki/index.md` or `wiki/log.md` skipped the gate entirely — silently exempting the exact bleed-into-index/log case gap 1's own acceptance criterion requires blocking. Included in this task's `hooks/pre-commit` rewrite and covered by `TestPreCommitDeltaScope`'s scenario 4.
 
 **Follow-up identified:**
-- TBD
+- Tier 2 migration (already-installed projects reconciling `.agentic-cms/bin/` → `.agentic-cms/scripts/`, from task 007) remains open and unrelated to this task.
+- Task 008 (global classification scanner) inherits the ack mechanism and widened floor for free via the shared `ac-classify` engine, as anticipated in this task's Notes.
+- The adopting brownfield project's own legacy backlog (the ~30 floor hits, ~20 of them pricing false positives) still needs its owner to walk through and ack/re-rate — that was always explicitly out of scope for this task (per Design Decisions' "Out of scope" bullet).
 
 ## Notes
 
