@@ -41,16 +41,30 @@ See also: how is content classification (confidentiality rating) enforced?
 
 **How is content classification (confidentiality rating) enforced?**
 
-Every `docs/`/`wiki/` page carries an optional `classification: C0 | C1 | C2 | C3` frontmatter field (standard CIA confidentiality axis: C0 Public, C1 Internal — the default when absent, C2 Confidential, C3 Restricted), rated by the agent at write time against a rubric in `CONTENT.md`. All detection logic — enum validity, staleness (via a `classified-hash` stamped at rating time), and heuristic floor patterns (credential-shaped strings imply at least C3; PII/currency-shaped content implies at least C2) — lives in exactly one place: `.agentic-cms/scripts/ac-classify` (`check`/`sweep`/`hook` subcommands). Every enforcement point is a thin caller of that one engine, never a re-implementation:
+Every `docs/`/`wiki/` page carries an optional `classification: C0 | C1 | C2 | C3` frontmatter field (standard CIA confidentiality axis: C0 Public, C1 Internal — the default when absent, C2 Confidential, C3 Restricted), rated by the agent at write time against a rubric in `CONTENT.md`. All detection logic — enum validity, staleness (via a `classified-hash` stamped at rating time), and heuristic floor patterns (credential-shaped strings imply at least C3; PII/currency-shaped content in any enumerated form — symbol-prefixed, symbol-suffixed, ISO-coded, word-form — implies at least C2) — lives in exactly one place: `.agentic-cms/scripts/ac-classify` (`check`/`sweep`/`hook` subcommands). The engine is purely deterministic — a bash+python3 script doing regex/JSON work, no LLM call anywhere — which is why it can run standalone inside a git hook with no agent present. Every enforcement point is a thin caller of that one engine, never a re-implementation:
 
 - **Agent hooks** (Claude Code `.claude/settings.json`, Codex `.codex/hooks.json`) fire on every content write, auto-raise floor violations, and block on stale ratings.
-- **Git pre-commit gate** (`.agentic-cms/hooks/pre-commit`, wired into `.git/hooks/pre-commit` by `init`) materializes the staged tree via `git checkout-index` and runs the same engine — blocks floor violations and confidentiality leaks into `wiki/index.md`/`wiki/log.md` summaries, warns (non-blocking) on stale or unrated pages.
+- **Git pre-commit gate** (`.agentic-cms/hooks/pre-commit`, wired into `.git/hooks/pre-commit` by `init`) materializes the staged tree via `git checkout-index` and runs the same engine. It is **delta-scoped**: it blocks only on invalid values, floor violations, and confidentiality leaks into `wiki/index.md`/`wiki/log.md` for files actually staged in that commit (a leak into a staged index/log file blocks regardless of whether the leaking source page itself is staged); every other pre-existing violation elsewhere in the tree collapses into one summarized warning line instead of blocking. This makes brownfield adoption incremental — one clean commit is never held hostage by an unrelated legacy backlog.
 - **Write-path skills** (`content-manage-item`, `content-import`, `content-add-notes`, `content-research`) rate before writing and include `ac-classify check` in their verify tail — the guaranteed fallback wherever a blocking hook isn't installed or available (e.g. GitHub Copilot CLI, whose hook has no documented blocking capability, so isn't wired in).
-- **`content-lint`** runs `ac-classify sweep` as the periodic catch-all for anything the other layers never saw — pre-existing drift, or a commit made with `git commit --no-verify`.
+- **`content-lint`** runs `ac-classify sweep` as the periodic catch-all for anything the other layers never saw — pre-existing drift, or a commit made with `git commit --no-verify`. This is also the audit that owns the tree-wide backlog the delta-scoped gate no longer blocks on.
 
-The ratchet rule: an agent may *raise* a page's classification; only the user may lower one. No mechanical path in the toolkit ever lowers a rating — `ac-page classify <path> <level>` will technically accept any level, but skill instructions and the hook's auto-raise logic only ever move upward.
+The ratchet rule: an agent may *raise* a page's classification; only the user may lower one. No mechanical path in the toolkit ever lowers a rating — `ac-page classify <path> <level>` will technically accept any level, but skill instructions and the hook's auto-raise logic only ever move upward. The floor's own contract is recall, not precision: it is deliberately never narrowed to reduce false positives, even when a pattern class (e.g. bare currency amounts) produces a lot of noise on legitimately public content — see the floor-acknowledgment entry below for how that noise gets resolved instead.
 
-See also: why does agentic-cms need confidentiality classification at all?; how does the git pre-commit classification gate get bypassed?; is classification enforcement available outside a project where `agentic-cms init` was run?
+See also: why does agentic-cms need confidentiality classification at all?; how does the git pre-commit classification gate get bypassed?; is classification enforcement available outside a project where `agentic-cms init` was run?; what is a classification floor acknowledgment and when should I use one?
+
+---
+
+**What is a classification floor acknowledgment (ack), and when should I use one?**
+
+An ack is the mechanism for keeping a page's classification lower than what a heuristic floor implies, when the floor hit is a false positive. It exists because the floor is deliberately broad (see the enforcement entry above) — it never narrows detection to reduce noise, so a real false-positive rate is an accepted cost, not a bug to patch by weakening the regex.
+
+Mechanically: `ac-page classify <path> <level> --ack-floor` stamps a `classification-ack:` frontmatter field set to a hash of the page's current body — the same hash `classified-hash:` already uses. `ac-classify` then reports that page's floor violation as a non-blocking note instead of a block, as long as the ack's hash still matches the current body. **Any edit to the page invalidates the ack** (the hash no longer matches), so the floor violation returns until someone reviews it again.
+
+**Acking is a user-only decision, never an agent's own judgment call** — it is functionally a "keep this lower than the floor implies" decision, which inherits the same restriction as lowering a rating outright under the ratchet rule. Every write-path skill and `content-lint` are instructed to run `--ack-floor` only on an explicit user instruction, never on their own initiative to quiet a violation they don't like; an agent hitting a floor violation should raise it or report it to the user by default.
+
+A user should intervene (ack) when they've reviewed flagged content and judged it genuinely not sensitive despite matching a floor pattern — e.g. a public vendor-pricing table tripping the currency floor. They should *not* intervene, and should instead let the rating raise automatically, when the floor is actually correct (a real cap table, a real credential).
+
+See also: how is content classification (confidentiality rating) enforced?
 
 ---
 
@@ -89,12 +103,15 @@ If private-repo distribution is ever needed, the fix isn't GitHub Packages — a
 
 **Does `agentic-cms init`/`update` refresh scaffolding files that already exist on disk, or does it skip them?**
 
-It depends which kind of file. `scaffold.Install()` in `scaffold/embed.go` splits every installed path into two buckets:
+It depends which kind of file. `scaffold.Install()` in `scaffold/embed.go` splits every installed path into buckets:
 
 - **Framework-owned scaffolding logic** — `.claude/skills/`, `.claude/agents/`, `.agentic-cms/templates/`, `.agentic-cms/scripts/`, `.agentic-cms/hooks/`, `.codex/` — is always overwritten with the version embedded in the currently installed CLI, even if the on-disk copy was locally edited. There is no drift or checksum check; the local edit is simply replaced. Overwritten files are reported under a distinct `updated` line in `agentic-cms init`'s output (and the summary's `updated` count), never as `skipped`.
-- **User-owned content** — `wiki/`, `raw/`, `CONTENT.md`, `docs/`, `.agentic-cms/VERSION` — is skip-if-exists: a re-run never touches it. `CLAUDE.md` is a special case — if it exists without the agentic-cms managed block, the block is appended (reported as `merged`); if the block is already present, the file is left alone (`skipped`).
+- **`.agentic-cms/VERSION`** is also always overwritten (its own special case, separate from the framework-owned bucket) — every `init`/`update` run stamps it with the installing binary's own version, so it always reflects the scaffold generation actually on disk.
+- **User-owned content** — `wiki/`, `raw/`, `CONTENT.md`, `docs/` — is skip-if-exists: a re-run never touches the files themselves. `CLAUDE.md` is a special case — if it exists without the agentic-cms managed block, the block is appended (reported as `merged`); if the block is already present, the file is left alone (`skipped`).
 
 `.claude/settings.json` is treated as user-configurable and is skip-if-exists, not framework-owned, since it's meant to be edited by the project owner rather than tracked upstream.
+
+`CONTENT.md` gets one further treatment beyond plain skip-if-exists: on every `init`/`update`, the installed copy's `## ` section headings are diff'd against the shipped copy's. If the shipped schema has sections the installed file doesn't (e.g. the file predates the Classification section), the run prints a "CONTENT.md reconciliation" report naming the missing sections and writes the full current shipped schema to `.agentic-cms/CONTENT.upstream.md` for manual merge. **The user's `CONTENT.md` itself is never edited by this process, ever** — no auto-insertion, no additive merge. If nothing was missing, or if you're checking after the fact whether reconciliation ran, look for the console report and `.agentic-cms/CONTENT.upstream.md`'s existence — not for any change to `CONTENT.md`, since none is expected either way.
 
 ---
 

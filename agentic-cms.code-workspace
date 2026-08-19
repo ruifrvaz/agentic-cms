@@ -3,10 +3,6 @@
     {
       "name": "main",
       "path": "."
-    },
-    {
-      "name": "task/011-classification-adoption-gaps-first-real-world-rollout",
-      "path": "../agentic-cms-wt-task-011-classification-adoption-gaps-first-real-world-rollout"
     }
   ],
   "settings": {
