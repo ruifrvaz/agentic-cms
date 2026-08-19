@@ -43,7 +43,11 @@ contract: `.agentic-cms/scripts/README.md`.
    .agentic-cms/scripts/ac-page classify <file> <higher-level>
    ```
    (`ac-page classify` also touches `updated:` and restamps the hash, so
-   skip a separate `ac-page touch` for a re-rated file.) Then, for every
+   skip a separate `ac-page touch` for a re-rated file.) Note: editing a
+   page invalidates any user floor-ack (`classification-ack:`) it carried —
+   if the floor violation returns after your note, report it to the user
+   for re-review rather than acking it yourself (`--ack-floor` is a user
+   decision, always). Then, for every
    edited file that was **not** re-rated:
    ```sh
    .agentic-cms/scripts/ac-page touch <file>

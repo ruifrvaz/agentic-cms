@@ -46,12 +46,12 @@ func runUpdate(localVersion string) {
 	}
 	if cmp == 0 {
 		fmt.Printf("Already up to date (%s)\n", localVersion)
-		checkAndReInit(projectDir)
+		checkAndReInit(projectDir, localVersion)
 		return
 	}
 	if cmp > 0 {
 		fmt.Printf("Local version (%s) is newer than latest release (%s). Nothing to do.\n", localVersion, release.TagName)
-		checkAndReInit(projectDir)
+		checkAndReInit(projectDir, localVersion)
 		return
 	}
 
@@ -315,7 +315,7 @@ func copyFile(src, dst string) error {
 // templates. Safe to run in-process only when this process's own embedded
 // content is known to match what's on disk (i.e., no binary replacement just
 // happened in this run) — see reinitWithBinary for the post-replacement case.
-func checkAndReInit(dir string) {
+func checkAndReInit(dir, version string) {
 	scaffoldPath := filepath.Join(dir, ".agentic-cms")
 	if _, err := os.Stat(scaffoldPath); err != nil {
 		// .agentic-cms/ not present — skip auto-init
@@ -324,7 +324,7 @@ func checkAndReInit(dir string) {
 	}
 
 	fmt.Println("Detected .agentic-cms/ — re-initializing project scaffolding...")
-	if err := runInit(dir); err != nil {
+	if err := runInit(dir, version); err != nil {
 		fmt.Fprintf(os.Stderr, "agentic-cms: %v\n", err)
 		os.Exit(1)
 	}

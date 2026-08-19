@@ -135,3 +135,9 @@ re-file the index entry back (`ac-index remove` + `ac-index add topics ...`),
 - Ratchet: you may raise a page's classification; only the user may lower one.
   `ac-page classify` will let you set any level mechanically — the ratchet is
   a rule you follow, not something the tool enforces for you.
+- Floor acks are a USER decision, never yours: `ac-page classify <path>
+  <level> --ack-floor` records that the user reviewed a heuristic floor hit
+  and keeps the rating. Only run it when the user explicitly says so —
+  never to silence a floor violation on your own judgment. The ack is
+  bound to the page body's hash, so any later edit invalidates it and the
+  floor hit returns for the user to re-review.

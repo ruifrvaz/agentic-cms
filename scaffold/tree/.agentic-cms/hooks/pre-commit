@@ -10,15 +10,24 @@
 # detection logic lives here: this script only interprets ac-classify's
 # JSON and decides block vs. warn.
 #
-# BLOCKs on: invalid classification values, heuristic floor violations,
-# C2+ content leaking into wiki/index.md or wiki/log.md.
-# WARNs (non-blocking) on: stale ratings, unrated pages.
+# Scope: the gate BLOCKs only for problems in files actually part of this
+# commit (the staged delta). Pre-existing drift elsewhere in the tree is
+# demoted to ONE summarized warning — content-lint's sweep owns that
+# backlog — so a brownfield adoption can commit incrementally instead of
+# being all-or-nothing.
+#
+# BLOCKs on (staged files only): invalid classification values, heuristic
+# floor violations (unless user-acked — see CONTENT.md's Classification
+# section), and C2+ content leaking into a STAGED wiki/index.md or
+# wiki/log.md, regardless of which page leaked.
+# WARNs (non-blocking) on: stale ratings and unrated pages in staged files,
+# plus one summary line for everything pre-existing elsewhere in the tree.
 # Escape hatch: git commit --no-verify (content-lint reports what slipped
 # through on the next sweep).
 set -euo pipefail
 
-if ! git diff --cached --name-only --diff-filter=ACM | \
-        grep -qE '^(docs/|wiki/(entities|concepts|sources)/)'; then
+STAGED="$(git diff --cached --name-only --diff-filter=ACM)"
+if ! grep -qE '^(docs/|wiki/(index\.md|log\.md|(entities|concepts|sources)/))' <<<"$STAGED"; then
     exit 0
 fi
 
@@ -33,36 +42,67 @@ fi
 
 RESULT="$(cd "$TMPROOT" && .agentic-cms/scripts/ac-classify sweep)"
 
+export AC_STAGED="$STAGED"
 python3 - "$RESULT" <<'PYEOF'
-import json, sys
+import json, os, sys
 
 result = json.loads(sys.argv[1])
+staged = set(os.environ.get("AC_STAGED", "").splitlines()) - {""}
 blocking = []
 warnings = []
+backlog = {"floor": 0, "invalid": 0, "bleed": 0, "stale": 0, "unrated": 0}
 
 for p in result["pages"]:
     if "error" in p:
         continue
+    in_delta = p["path"] in staged
     if not p["valid"]:
-        blocking.append(f'{p["path"]}: invalid classification value')
+        if in_delta:
+            blocking.append(f'{p["path"]}: invalid classification value')
+        else:
+            backlog["invalid"] += 1
     if p["floor_violation"]:
         level = p["classification"] or "C1"
-        blocking.append(
-            f'{p["path"]}: rated {level} but content implies at least '
-            f'{p["implied_level"]} — raise it with '
-            f'`ac-page classify {p["path"]} {p["implied_level"]}`')
+        if in_delta:
+            blocking.append(
+                f'{p["path"]}: rated {level} but content implies at least '
+                f'{p["implied_level"]} — raise it with '
+                f'`ac-page classify {p["path"]} {p["implied_level"]}`, or, if '
+                f'the USER judges this a false positive, they can keep the '
+                f'rating with `ac-page classify {p["path"]} {level} --ack-floor`')
+        else:
+            backlog["floor"] += 1
     if p["stale"]:
-        warnings.append(f'{p["path"]}: classification is stale (content changed since last rated)')
+        if in_delta:
+            warnings.append(f'{p["path"]}: classification is stale (content changed since last rated)')
+        else:
+            backlog["stale"] += 1
     if p["unrated"]:
-        warnings.append(f'{p["path"]}: no classification field (defaults to C1) — rate it explicitly')
+        if in_delta:
+            warnings.append(f'{p["path"]}: no classification field (defaults to C1) — rate it explicitly')
+        else:
+            backlog["unrated"] += 1
 
 for b in result["bleed"]:
-    blocking.append(
-        f'{b["location"]}:{b["line"]}: leaks {b["detected"]}-level content '
-        f'from {b["page"]} — use an opaque summary instead')
+    # Bleed blocks whenever the index/log file itself is part of this
+    # commit — regardless of whether the leaking source page is staged.
+    if b["location"] in staged:
+        blocking.append(
+            f'{b["location"]}:{b["line"]}: leaks {b["detected"]}-level content '
+            f'from {b["page"]} — use an opaque summary instead')
+    else:
+        backlog["bleed"] += 1
 
 for w in warnings:
     print(f"pre-commit WARNING: {w}", file=sys.stderr)
+
+total = sum(backlog.values())
+if total:
+    parts = ", ".join(f"{n} {k}" for k, n in backlog.items() if n)
+    print(f"pre-commit WARNING: {total} pre-existing classification issue(s) "
+          f"elsewhere in the tree ({parts}) — not blocking this commit; "
+          f"audit with `.agentic-cms/scripts/ac-classify sweep` or the "
+          f"content-lint skill", file=sys.stderr)
 
 if blocking:
     print("pre-commit: classification gate BLOCKED this commit:", file=sys.stderr)

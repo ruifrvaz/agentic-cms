@@ -36,6 +36,9 @@ contract: `.agentic-cms/scripts/README.md` — check `"ok"` after every `ac-*` c
      explicitly. If the update raises the page's sensitivity, re-rate
      (`ac-page classify <file> <higher-level>`, which also touches
      `updated:`); otherwise `.agentic-cms/scripts/ac-page touch <file>`.
+     Editing invalidates any user floor-ack on the page — if a floor
+     violation resurfaces, relay it to the user; never `--ack-floor` on
+     your own judgment.
    - Update affected wiki entity/concept pages and cross-links the same way.
 4. **Log and verify**:
    ```sh

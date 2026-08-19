@@ -7,16 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-19
+
 ### Added
 
-- **Delta-scoped git pre-commit classification gate** (pending v0.7.0 · PR #9) — blocks only on the staged commit's files (plus bleed into a staged `wiki/index.md`/`wiki/log.md`, regardless of source page); pre-existing tree-wide drift is summarized as one non-blocking warning instead of blocking every commit until the whole legacy backlog is rated.
-- **Classification floor acknowledgment** (pending v0.7.0 · PR #9) — `ac-page classify <path> <level> --ack-floor` records a user-reviewed floor false positive, bound to the page's content hash; any edit invalidates the ack. Acking is a user-only decision, documented as such in every write-path skill.
-- **CONTENT.md schema reconciliation** (pending v0.7.0 · PR #9) — `init`/`update` over an install with a customized `CONTENT.md` missing upstream schema sections now emit a report and write `.agentic-cms/CONTENT.upstream.md` for manual merge; the user's file is never edited.
+- **Delta-scoped git pre-commit classification gate** — blocks only on the staged commit's files (plus bleed into a staged `wiki/index.md`/`wiki/log.md`, regardless of source page); pre-existing tree-wide drift is summarized as one non-blocking warning instead of blocking every commit until the whole legacy backlog is rated.
+- **Classification floor acknowledgment** — `ac-page classify <path> <level> --ack-floor` records a user-reviewed floor false positive, bound to the page's content hash; any edit invalidates the ack. Acking is a user-only decision, documented as such in every write-path skill.
+- **CONTENT.md schema reconciliation** — `init`/`update` over an install with a customized `CONTENT.md` missing upstream schema sections now emit a report and write `.agentic-cms/CONTENT.upstream.md` for manual merge; the user's file is never edited.
 
 ### Changed
 
-- **Currency classification floor widened** (pending v0.7.0 · PR #9) — now also catches ISO-coded, symbol-suffixed, and word-form currency amounts, keeping the floor's zero-false-negative recall contract; false positives are resolved via the new ack mechanism instead of narrower detection.
-- **`.agentic-cms/VERSION` auto-stamped** (pending v0.7.0 · PR #9) — now set to the installing binary's version on every `init`/`update` run instead of a static literal that had drifted to `0.1.0`.
+- **Currency classification floor widened** — now also catches ISO-coded, symbol-suffixed, and word-form currency amounts, keeping the floor's zero-false-negative recall contract; false positives are resolved via the new ack mechanism instead of narrower detection.
+- **`.agentic-cms/VERSION` auto-stamped** — now set to the installing binary's version on every `init`/`update` run instead of a static literal that had drifted to `0.1.0`.
 
 ## [0.6.2] - 2026-08-19
 

@@ -41,7 +41,10 @@ contract: `.agentic-cms/scripts/README.md` — check `"ok"` after every `ac-*` c
    Merge the converted markdown into the created page (clean heading levels,
    tables, export artifacts) and set frontmatter `sources: [raw/<file>]`. If
    the merged content turns out more sensitive than the initial rating,
-   re-rate: `ac-page classify <path> <level>`.
+   re-rate: `ac-page classify <path> <level>`. If a heuristic floor flags
+   a page the user judges a false positive, only the user may keep the
+   rating (`--ack-floor`) — never ack on your own judgment; relay the
+   choice to the user instead.
 4. **Wiki integration**: rate the source summary too — a summary of a
    confidential source is not automatically confidential itself (an opaque
    summary of a C2 source can be C1), but check against the rubric rather

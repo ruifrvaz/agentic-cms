@@ -6,7 +6,11 @@
 #   ac-page touch <file.md>         set updated: to today
 #   ac-page promote <src.md> <dest.md>   move a draft out of drafts/, set status: final, touch updated:
 #   ac-page archive <src.md> <dest.md>   move an item into archive/, set status: archived, touch updated:
-#   ac-page classify <file.md> <C0|C1|C2|C3>   set classification, restamp classified-hash, touch updated:
+#   ac-page classify <file.md> <C0|C1|C2|C3> [--ack-floor]
+#                    set classification, restamp classified-hash, touch updated:
+#                    --ack-floor additionally stamps classification-ack: (a
+#                    USER-only decision — see CONTENT.md's Classification
+#                    section); without it any standing ack is withdrawn
 set -euo pipefail
 export AC_CMD="${1:-}"; shift || true
 python3 - "$@" <<'PYEOF'
@@ -82,7 +86,14 @@ if cmd == "new":
                       "slug": slug, "classification": classification}))
 
 elif cmd == "classify":
-    if len(args) != 2: fail("usage: ac-page classify <file.md> <C0|C1|C2|C3>")
+    # --ack-floor stamps a classification-ack: bound to the same body hash as
+    # classified-hash. It records a USER decision ("I reviewed this floor hit
+    # and keep this rating") — agents must never pass it on their own
+    # judgment, only relay an explicit user instruction. Any body change
+    # invalidates the ack together with the hash.
+    ack_floor = "--ack-floor" in args
+    args = [a for a in args if a != "--ack-floor"]
+    if len(args) != 2: fail("usage: ac-page classify <file.md> <C0|C1|C2|C3> [--ack-floor]")
     path, level = args
     if level not in LEVELS: fail(f"level must be one of {LEVELS}")
     if not os.path.isfile(path): fail(f"no such file: {path}")
@@ -97,10 +108,22 @@ elif cmd == "classify":
         text = re.sub(r"^classified-hash:.*$", f"classified-hash: {new_hash}", text, count=1, flags=re.M)
     else:
         text = re.sub(r"\n---\n", f"\nclassified-hash: {new_hash}\n---\n", text, count=1)
+    if ack_floor:
+        if re.search(r"^classification-ack:", text, re.M):
+            text = re.sub(r"^classification-ack:.*$", f"classification-ack: {new_hash}", text, count=1, flags=re.M)
+        else:
+            text = re.sub(r"\n---\n", f"\nclassification-ack: {new_hash}\n---\n", text, count=1)
+    else:
+        # A plain re-rate withdraws any standing ack: the rating decision was
+        # just re-made, so a leftover ack no longer represents current intent.
+        text = re.sub(r"^classification-ack:.*\n", "", text, count=1, flags=re.M)
     text = re.sub(r"^(updated:).*$", rf"\1 {TODAY}", text, count=1, flags=re.M)
     open(path, "w", encoding="utf-8").write(text)
-    print(json.dumps({"ok": True, "path": path, "classification": level,
-                      "classified-hash": new_hash, "updated": TODAY}))
+    out = {"ok": True, "path": path, "classification": level,
+           "classified-hash": new_hash, "updated": TODAY}
+    if ack_floor:
+        out["classification-ack"] = new_hash
+    print(json.dumps(out))
 
 elif cmd in ("promote", "archive"):
     if len(args) != 2: fail(f"usage: ac-page {cmd} <src.md> <dest.md>")
