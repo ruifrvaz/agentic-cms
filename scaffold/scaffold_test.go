@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// testVersion is the stand-in binary version tests install with.
+const testVersion = "v9.9.9-test"
+
 var wantFiles = []string{
 	"CONTENT.md",
 	"CLAUDE.md",
@@ -47,7 +50,7 @@ var wantFiles = []string{
 
 func TestInstallGreenfield(t *testing.T) {
 	dir := t.TempDir()
-	res, err := Install(dir)
+	res, err := Install(dir, testVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +109,7 @@ func TestInstallGreenfield(t *testing.T) {
 
 func TestInstallIdempotent(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := Install(dir); err != nil {
+	if _, err := Install(dir, testVersion); err != nil {
 		t.Fatal(err)
 	}
 	// Mutate a file to prove re-init never overwrites.
@@ -114,7 +117,7 @@ func TestInstallIdempotent(t *testing.T) {
 	if err := os.WriteFile(marker, []byte("user content"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	res, err := Install(dir)
+	res, err := Install(dir, testVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +132,7 @@ func TestInstallIdempotent(t *testing.T) {
 
 func TestInstallOverwritesFrameworkFiles(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := Install(dir); err != nil {
+	if _, err := Install(dir, testVersion); err != nil {
 		t.Fatal(err)
 	}
 	marker := filepath.Join(dir, ".claude", "skills", "content-lint", "SKILL.md")
@@ -140,7 +143,7 @@ func TestInstallOverwritesFrameworkFiles(t *testing.T) {
 	if err := os.WriteFile(marker, []byte("locally edited content"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	res, err := Install(dir)
+	res, err := Install(dir, testVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +177,7 @@ func TestInstallBrownfieldClaudeMD(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte(existing), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	res, err := Install(dir)
+	res, err := Install(dir, testVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +193,7 @@ func TestInstallBrownfieldClaudeMD(t *testing.T) {
 		t.Error("managed block not appended")
 	}
 	// Third run: block present, must be skipped, not duplicated.
-	if _, err := Install(dir); err != nil {
+	if _, err := Install(dir, testVersion); err != nil {
 		t.Fatal(err)
 	}
 	b, _ = os.ReadFile(filepath.Join(dir, "CLAUDE.md"))

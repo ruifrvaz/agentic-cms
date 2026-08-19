@@ -110,6 +110,9 @@ find "$EXPECTED" -type f \
     -not -path "$EXPECTED/.agentic-cms/templates/*" \
     -not -path "$EXPECTED/.agentic-cms/scripts/*" \
     -print0 | xargs -0 sed -i "s/{{DATE}}/$TODAY/g"
+# .agentic-cms/VERSION is stamped with the installing binary's version.
+BIN_VERSION="$("$BINARY" version | awk '{print $2}')"
+sed -i "s/{{VERSION}}/$BIN_VERSION/g" "$EXPECTED/.agentic-cms/VERSION"
 
 # --- 1. Greenfield install ---
 echo "-- greenfield install --"
@@ -180,6 +183,24 @@ clean_after_out="$(.agentic-cms/scripts/ac-classify check docs/smoke/check.md)"
 echo "    $clean_after_out"
 assert_contains "$clean_after_out" '"clean": true' "ac-classify check reports clean after re-rating to the implied floor"
 
+# Floor ack: a user-acked false positive stops blocking; the ack is bound to
+# the body hash, so it must be honored only while the body is unchanged.
+.agentic-cms/scripts/ac-page new doc docs/smoke/pricing.md --title "Public Pricing" --topic smoke >/dev/null
+python3 -c "
+text = open('docs/smoke/pricing.md').read()
+text = text.replace('## Content', '## Content\n\nPublic list price: \$100/month.')
+open('docs/smoke/pricing.md', 'w').write(text)
+"
+floor2_out="$(.agentic-cms/scripts/ac-classify check docs/smoke/pricing.md)"
+assert_contains "$floor2_out" '"floor_violation": true' "bare currency figure trips the C2 floor (recall kept)"
+ack_out="$(.agentic-cms/scripts/ac-page classify docs/smoke/pricing.md C1 --ack-floor)"
+echo "    $ack_out"
+assert_contains "$ack_out" '"classification-ack"' "ac-page classify --ack-floor stamps the ack"
+acked_out="$(.agentic-cms/scripts/ac-classify check docs/smoke/pricing.md)"
+echo "    $acked_out"
+assert_contains "$acked_out" '"clean": true' "acked false positive reports clean"
+assert_contains "$acked_out" '"acked": true' "acked page reports acked: true"
+
 popd >/dev/null
 
 # --- 2. Idempotent re-run ---
@@ -193,6 +214,25 @@ out="$("$BINARY" init "$IDEM" 2>&1)"
 printf '%s\n' "$out" | sed 's/^/    /'
 assert_no_line_matches "$out" "  created  " "second install creates no files"
 assert_contains "$(cat "$IDEM/wiki/index.md")" "user content" "mutated file survives re-init"
+
+# --- 2b. CONTENT.md schema reconciliation ---
+echo
+echo "-- CONTENT.md reconciliation --"
+RECON="$SANDBOX/reconcile"
+mkdir -p "$RECON"
+"$BINARY" init "$RECON" >/dev/null
+sed -i 's/^## Classification$/## My Local Rules/' "$RECON/CONTENT.md"
+out="$("$BINARY" init "$RECON" 2>&1)"
+printf '%s\n' "$out" | sed 's/^/    /'
+assert_contains "$out" "CONTENT.md reconciliation" "re-init over a customized CONTENT.md emits a reconciliation report"
+assert_contains "$out" "Classification" "reconciliation report names the missing section"
+if [[ -f "$RECON/.agentic-cms/CONTENT.upstream.md" ]]; then
+    pass "upstream sidecar written"
+else
+    fail "upstream sidecar written — .agentic-cms/CONTENT.upstream.md missing"
+fi
+assert_contains "$(cat "$RECON/CONTENT.md")" "## My Local Rules" "user's customized CONTENT.md left untouched"
+assert_no_line_matches "$(cat "$RECON/CONTENT.md")" "## Classification" "reconciliation did not edit the user's CONTENT.md"
 
 # --- 3. Brownfield CLAUDE.md merge ---
 echo

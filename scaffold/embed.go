@@ -49,6 +49,22 @@ func isFrameworkOwned(rel string) bool {
 	return false
 }
 
+// versionFile records which scaffold generation a project runs. It is stamped
+// with the installing binary's version on every run (its embedded content is
+// just the {{VERSION}} placeholder), so `update`'s CONTENT.md reconciliation
+// can report installed-vs-shipping versions.
+var versionFile = filepath.FromSlash(".agentic-cms/VERSION")
+
+// InstalledVersion returns the scaffold version recorded in dir by a previous
+// install, or "" if none is recorded (a pre-v0.7.0 scaffold or a fresh dir).
+func InstalledVersion(dir string) string {
+	b, err := os.ReadFile(filepath.Join(dir, versionFile))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
 // Result summarizes what Install did.
 type Result struct {
 	Created []string
@@ -64,7 +80,10 @@ type Result struct {
 // it already exists, so that init/update actually refreshes it. CLAUDE.md
 // gets special treatment: if it already exists and does not contain the
 // agentic-cms block, the block is appended; otherwise it is left alone.
-func Install(dir string) (*Result, error) {
+// version is the installing binary's version; it is stamped into
+// .agentic-cms/VERSION (always overwritten) so the project records which
+// scaffold generation it runs.
+func Install(dir, version string) (*Result, error) {
 	res := &Result{}
 	date := time.Now().Format("2006-01-02")
 
@@ -102,10 +121,13 @@ func Install(dir string) (*Result, error) {
 		if rel == "CLAUDE.md" {
 			return installClaudeMD(target, content, res)
 		}
+		if rel == versionFile {
+			content = strings.ReplaceAll(content, "{{VERSION}}", version)
+		}
 
 		_, statErr := os.Stat(target)
 		exists := statErr == nil
-		if exists && !isFrameworkOwned(rel) {
+		if exists && !isFrameworkOwned(rel) && rel != versionFile {
 			res.Skipped = append(res.Skipped, rel+" (exists)")
 			return nil
 		}

@@ -30,6 +30,11 @@ installed):
 - `floor_violation` entries fix directly, no judgment needed — this
   mirrors exactly what the post-tool-use hook already does automatically,
   so treat it the same way: `ac-page classify <path> <implied_level>`.
+  Exception: if the user has told you a specific page's floor hit is a
+  false positive, don't re-raise it — report it and let the user decide
+  whether to ack it (`ac-page classify <path> <level> --ack-floor`).
+  Acking is always the user's call, never yours; pages the user already
+  acked show `"acked": true` with no violation and need no action.
 - `pages` with `"valid": false` (a hand-edited or corrupted enum value):
   fix directly to the nearest sensible level by reading the page.
 

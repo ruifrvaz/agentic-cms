@@ -33,12 +33,18 @@ ac-page archive <src.md> <dest.md>
   Mirror of promote: moves src to dest, sets status: archived (inserting
   the field if absent), touches updated:. Refuses to overwrite. Used to
   retire an item into docs/<topic>/archive/.
-ac-page classify <file.md> <C0|C1|C2|C3>
-  → {"ok":true,"path":...,"classification":...,"classified-hash":...,"updated":...}
+ac-page classify <file.md> <C0|C1|C2|C3> [--ack-floor]
+  → {"ok":true,"path":...,"classification":...,"classified-hash":...,"updated":...[,"classification-ack":...]}
   Sets classification (inserting the field if absent), restamps
   classified-hash from the file's current body, touches updated:. Purely
   mechanical — does not enforce the ratchet rule (raise-only); that is a
   skill-instruction and hook-logic policy, not a tool constraint.
+  --ack-floor additionally stamps classification-ack: bound to the same
+  body hash — the USER's recorded decision that a heuristic floor hit is
+  a false positive and the rating stands. Agents never pass it on their
+  own judgment, only relaying an explicit user instruction. Any body
+  change invalidates the ack (hash mismatch); a plain classify without
+  the flag withdraws a standing ack.
 ```
 
 ### ac-index — wiki/index.md maintenance
@@ -82,15 +88,21 @@ ac-inventory              → {"ok":true,"topics":{...},"drafts":{...},"archived
 ```
 ac-classify check <path...>
   → {"ok":true,"clean":bool,"pages":[{path,classification,valid,unrated,
-                                       stale,floor,floor_violation[,implied_level]}]}
+                                       stale,floor,floor_violation,acked[,implied_level]}]}
   Per-page: is the classification value legal, is it unrated (no field —
   defaults to C1), is it stale (classified-hash doesn't match the current
   body — content changed since last rated), and does the body's content
-  trip a heuristic floor pattern (credential-shaped → C3; email/currency/
-  PII-shaped → C2) above the current rating. clean is false only on an
-  invalid value or a floor violation — staleness and unrated are
-  advisory, not blocking, by design (see CONTENT.md's Classification
-  section for the block-vs-warn split).
+  trip a heuristic floor pattern (credential-shaped → C3; email/SSN/
+  currency-shaped in any form — symbol-prefixed/suffixed, ISO-coded,
+  word-form → C2) above the current rating. The floor's contract is
+  recall (0% false negatives over its enumerated shapes); precision is
+  the ack's job, never a narrower pattern. A user floor-ack
+  (classification-ack: matching the current body hash — see ac-page
+  classify --ack-floor) reports acked:true and suppresses the
+  floor_violation while the body is unchanged; the floor itself stays
+  visible. clean is false only on an invalid value or a floor violation —
+  staleness and unrated are advisory, not blocking, by design (see
+  CONTENT.md's Classification section for the block-vs-warn split).
 ac-classify sweep
   → {"ok":true,"clean":bool,"pages":[...],"bleed":[{page,location,line,text,detected}]}
   check across every docs/**/*.md, wiki/entities/*.md, wiki/concepts/*.md,
@@ -113,7 +125,11 @@ ac-classify hook
 Wired in by the scaffold: `.claude/settings.json` and `.codex/hooks.json`
 (both PostToolUse → `ac-classify hook`), and `.agentic-cms/hooks/pre-commit`
 (a versioned script `agentic-cms init` wires into `.git/hooks/pre-commit`
-non-destructively — see the root README's install notes). Copilot CLI's
+non-destructively — see the root README's install notes). The pre-commit
+gate is delta-scoped: it blocks only on violations in the files staged in
+that commit (plus bleed in a staged wiki/index.md or wiki/log.md,
+whichever page leaked), and summarizes pre-existing drift elsewhere as one
+non-blocking warning — content-lint owns that backlog. Copilot CLI's
 hook is not wired in this version (no documented blocking capability as of
 this writing) — the skill-tail `ac-classify check` calls are the guaranteed
 fallback there.

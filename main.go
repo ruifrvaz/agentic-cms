@@ -41,8 +41,10 @@ Usage:
   agentic-cms version      print version
   agentic-cms help         show this help
 
-init is non-destructive: existing files are never overwritten. An existing
-CLAUDE.md is extended with a managed agentic-cms block instead of replaced.
+init never overwrites your content (raw/, docs/, wiki/, CONTENT.md);
+framework files (skills, agents, templates, scripts, hooks) are refreshed
+to the installed release on every run. An existing CLAUDE.md is extended
+with a managed agentic-cms block instead of replaced.
 `
 
 func main() {
@@ -58,7 +60,7 @@ func main() {
 		if len(os.Args) > 2 {
 			dir = os.Args[2]
 		}
-		if err := runInit(dir); err != nil {
+		if err := runInit(dir, v); err != nil {
 			fmt.Fprintf(os.Stderr, "agentic-cms: %v\n", err)
 			os.Exit(1)
 		}
@@ -75,7 +77,7 @@ func main() {
 	}
 }
 
-func runInit(dir string) error {
+func runInit(dir, version string) error {
 	if runtime.GOOS != "linux" {
 		fmt.Fprintln(os.Stderr, "warning: agentic-cms currently targets Linux; proceeding anyway")
 	}
@@ -94,7 +96,11 @@ func runInit(dir string) error {
 	}
 	fmt.Printf("Initializing agentic-cms scaffolding in %s\n", abs)
 
-	res, err := scaffold.Install(dir)
+	// Read the previously installed scaffold generation before Install
+	// restamps .agentic-cms/VERSION with this binary's version.
+	prevVersion := scaffold.InstalledVersion(dir)
+
+	res, err := scaffold.Install(dir, version)
 	if err != nil {
 		return err
 	}
@@ -102,6 +108,14 @@ func runInit(dir string) error {
 		return err
 	}
 	res.Print()
+
+	report, err := scaffold.ReconcileContentMD(dir, prevVersion, version)
+	if err != nil {
+		return err
+	}
+	if report != nil {
+		report.Print()
+	}
 
 	fmt.Println()
 	fmt.Printf("Done: %d created, %d updated, %d merged, %d skipped.\n",

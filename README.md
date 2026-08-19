@@ -98,6 +98,18 @@ writes, ratings only ever ratchet **up** (only you can lower one), and
 `wiki/index.md`/`wiki/log.md` entries for C2+ pages are restricted to
 opaque summaries — no figures, no names, no quoted content.
 
+Heuristic floors back the ratings with pure recall — credential-shaped
+strings imply at least C3; emails, SSN-shaped numbers, and currency
+amounts in any form imply at least C2 — and are never narrowed to reduce
+noise. When a floor hit is a false positive (a public price list, say),
+**you** — never the agent — can acknowledge it and keep the rating
+(`ac-page classify <path> <level> --ack-floor`); the ack is bound to the
+page's content hash, so any edit invalidates it for re-review. The git
+pre-commit gate is delta-scoped: it blocks only on problems in the files
+you're actually committing and summarizes pre-existing backlog in one
+warning, so adopting classification on a brownfield project is
+incremental, not all-or-nothing.
+
 ## For developers
 
 Downloads the latest release binary into `~/.local/bin`. Pin a version with
@@ -152,10 +164,19 @@ generation). Skills delegate to them for heavy work.
 
 Running `agentic-cms init` on an existing installation is safe:
 
-- **Non-destructive** — existing files are never overwritten
+- **Non-destructive for your content** — `raw/`, `docs/`, `wiki/`,
+  `CONTENT.md`, and `.claude/settings.json` are never overwritten
+- **Refreshes framework files** — skills, agents, templates, scripts, and
+  hooks are always updated to the installed release's version (reported
+  as `updated`)
 - **Idempotent** — re-running doesn't duplicate managed content
 - **Merges `CLAUDE.md`** — appends a managed `<!-- agentic-cms -->` block
   instead of replacing an existing file
+- **Reconciles `CONTENT.md` schema drift** — when your customized
+  `CONTENT.md` is missing upstream schema sections, `init`/`update` report
+  which ones and write the current upstream copy to
+  `.agentic-cms/CONTENT.upstream.md` for manual merge; your file is never
+  edited
 - **Picks up new scaffold files** — run again after upgrading, or use
   `agentic-cms update`, which fetches the latest release, replaces the
   binary, and re-runs `init` in the project directory
@@ -213,10 +234,11 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
   Copilot CLI's hook config is deferred (no documented blocking capability
   as of this writing) — its skill-tail fallback still enforces classification
   there, just without in-turn hook feedback.
-- Scaffold diffing for `agentic-cms update` — it currently re-runs the
-  non-destructive `init` (adds new files, never touches existing ones); it
-  can't yet offer to update scaffold files whose *content* changed upstream,
-  nor clean up renamed ones (upgraded installs keep the stale
+- Scaffold cleanup for `agentic-cms update` — `init`/`update` now refresh
+  framework-owned files (skills, agents, templates, scripts, hooks) and
+  reconcile `CONTENT.md` schema drift via a report plus
+  `.agentic-cms/CONTENT.upstream.md` sidecar, but can't yet clean up
+  renamed scaffold files (upgraded installs keep the stale
   `content-new-item/` skill dir alongside its replacement `content-manage-item/`)
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
 
