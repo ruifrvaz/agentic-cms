@@ -76,3 +76,18 @@ version: "1.1.0"
 |------|---------|-----|
 | Go | Getting Started | https://go.dev/doc/tutorial/getting-started |
 | Go | embed package | https://pkg.go.dev/embed |
+
+## Task 011 — Classification adoption gaps (first real-world rollout)
+
+**Context fingerprint:** sha256:edceb3e4baae0eafa951d904be1edb53cf567d56fc7727ba2287057f15f0b349
+**Refreshed:** 2026-08-19
+
+| Tool | Section | URL |
+|------|---------|-----|
+| Git | githooks (pre-commit) | https://git-scm.com/docs/githooks |
+| Git | git-diff (staged delta) | https://git-scm.com/docs/git-diff |
+| Git | git-checkout-index | https://git-scm.com/docs/git-checkout-index |
+| Claude Code | Hooks | https://code.claude.com/docs/en/hooks |
+| OpenAI Codex CLI | Hooks | https://learn.chatgpt.com/docs/hooks |
+| GitHub REST API | Releases | https://docs.github.com/en/rest/releases/releases |
+| Python 3 | re module | https://docs.python.org/3/library/re.html |
