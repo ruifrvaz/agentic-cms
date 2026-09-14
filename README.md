@@ -53,6 +53,10 @@ agentic-cms init
   time and enforced automatically, so the same synthesis that makes the
   wiki useful can't silently leak what shouldn't spread. See
   [Classification](#classification).
+- **Optional content types** — `init --type <name>` layers a domain on top
+  of the base scaffold: its own topics, page templates, skills, and additive
+  schema, without changing the typeless base at all. See
+  [Content types](#content-types).
 
 ## How it works
 
@@ -71,6 +75,34 @@ points agents at it automatically.
 
 You work from any GUI that hosts a coding agent (VS Code, Cursor, a terminal) —
 the agent runs the skills, you browse the markdown.
+
+## Content types
+
+`agentic-cms init` is typeless by default — the base scaffold says nothing
+about what your content is *about*. A **content type** is an optional domain
+layer installed on top, without changing the base at all:
+
+```sh
+agentic-cms init --type candidate-interview
+agentic-cms init --type list   # list the types embedded in this binary
+```
+
+A type ships its own page templates (`.agentic-cms/templates/`), its own
+skills (`.claude/skills/`), a few additive `CONTENT.md` sections (composed
+into the schema at install time — the base, typeless schema is never
+touched), a second `CLAUDE.md` managed block, and optionally non-markdown
+payload of its own. Re-running `init`/`update` with `--type` omitted honors
+whichever type a project already has installed, read from
+`.agentic-cms/TYPE.md`; type files refresh on every run exactly like the
+base scaffold's own skills and templates.
+
+The first type, **`candidate-interview`**, is a personal knowledge base for
+running one job-interview recruitment process end to end: company and role
+research, per-round plans and debriefs, a mock-interview practice loop with
+scored debriefs and a gap-course/exam cycle, and an illustrative coding-drill
+exercise. It was lived first (a real, genericized hiring process) and
+abstracted second — see `.agentic-cms/TYPE.md` in a typed install for the
+full manifest.
 
 ## Classification
 
@@ -138,6 +170,8 @@ make build && sudo make install
 | Command | Description |
 |---------|-------------|
 | `agentic-cms init [dir]` | Install the scaffolding into `dir` (default: `.`) |
+| `agentic-cms init [dir] --type <name>` | Also layer a [content type](#content-types) on top; omitted on a re-init, an already-installed type is honored automatically |
+| `agentic-cms init --type list` | List the content types embedded in this binary |
 | `agentic-cms update` | Fetch the latest release, replace the binary, and re-run `init` in the project directory |
 | `agentic-cms version` | Print the installed version |
 | `agentic-cms help` | Show usage |
@@ -205,6 +239,12 @@ your-project/
 Conversion tooling (pandoc, `markitdown`, `python-pptx`) is installed on demand by
 the agent when importing/exporting — the scaffold itself is pure markdown.
 
+A [typed](#content-types) install adds `.agentic-cms/TYPE.md` (the type's
+manifest), its own templates alongside the five base kinds, its own skills
+alongside the nine above, a second managed block in `CLAUDE.md`, and
+whatever non-markdown payload the type ships (`candidate-interview` adds
+`exercises/`).
+
 ## Documentation
 
 - **[CONTENT.md](scaffold/tree/CONTENT.md)** — the schema template installed
@@ -241,6 +281,10 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
   renamed scaffold files (upgraded installs keep the stale
   `content-new-item/` skill dir alongside its replacement `content-manage-item/`)
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
+- A second content type (`recruiter-interview`), to prove the type mechanism
+  generalizes beyond `candidate-interview`
+- Type-aware scaffold cleanup: once pruning exists, recognize a type's own
+  files as owned rather than relying on "nothing is pruned yet"
 
 ## Brief mention
 
