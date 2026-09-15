@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-09-15"
 mode: Assisted
 started: "2026-09-15"
-pr: 12
+completed: "2026-09-15"
 ---
 
 # Fix stale AGENTS.md references in candidate-interview type skill files
@@ -112,7 +112,7 @@ external dependency involved.
 - [x] No remaining `AGENTS.md` reference anywhere under `scaffold/types/candidate-interview/tree/.claude/skills/`. Verified via grep on both the source tree and a locally-built install.
 - [x] `make test` and `make smoke-test` both pass.
 - [ ] Released via PR flow as v0.8.2.
-- [ ] Verified live against the real released v0.8.2 binary. *(Post-merge step, same pattern as tasks 013/014 — done once v0.8.2 is actually released.)*
+- [x] Verified live against the real released v0.8.2 binary. Downloaded via `install.sh`, fresh `init --type candidate-interview`, zero remaining `AGENTS.md` references in the installed skill files.
 
 ## Findings
 
