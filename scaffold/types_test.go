@@ -118,6 +118,14 @@ func TestInstallTypeOverlay(t *testing.T) {
 	if !strings.Contains(string(typeMD), testVersion) {
 		t.Errorf("TYPE.md does not contain the stamped version %q", testVersion)
 	}
+	// TYPE.md's own prose names {{DATE}} as one of ac-page's placeholders —
+	// that literal mention must survive install untouched, unlike the real
+	// {{VERSION}} field above. Regression test for a bug where InstallType's
+	// {{DATE}} substitution corrupted this sentence into today's literal
+	// date, found via a live install of the real v0.8.0 release.
+	if !strings.Contains(string(typeMD), "{{DATE}}") {
+		t.Error("TYPE.md's placeholder-name documentation lost its literal {{DATE}} mention")
+	}
 	if got := InstalledType(dir); got != "candidate-interview" {
 		t.Errorf("InstalledType() after InstallType = %q, want candidate-interview", got)
 	}

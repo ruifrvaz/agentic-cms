@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-15
+
 ### Fixed
 
-- **`TYPE.md`'s `{{DATE}}` placeholder documentation no longer corrupted on install** (pending v0.8.1 · PR #11) — `InstallType`'s `{{DATE}}` substitution excluded `.agentic-cms/templates/` and `exercises/` but not `.agentic-cms/TYPE.md` itself, so its own prose naming `{{DATE}}` as one of `ac-page`'s placeholders was overwritten with the literal install date on every typed install.
+- **`TYPE.md`'s `{{DATE}}` placeholder documentation no longer corrupted on install** — `InstallType`'s `{{DATE}}` substitution excluded `.agentic-cms/templates/` and `exercises/` but not `.agentic-cms/TYPE.md` itself, so its own prose naming `{{DATE}}` as one of `ac-page`'s placeholders was overwritten with the literal install date on every typed install. Found via a live install of the real v0.8.0 release.
 
 ## [0.8.0] - 2026-09-15
 
