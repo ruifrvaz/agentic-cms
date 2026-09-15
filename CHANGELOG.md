@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-15
+
 ### Added
 
-- **Content types** (pending v0.8.0 · PR #10) — `agentic-cms init --type <name>` layers an optional domain on top of the typeless base scaffold: its own page templates, skills, and additive `CONTENT.md`/`CLAUDE.md` sections, composed via anchor-based fragments rather than full-file copies. `init`/`update` with `--type` omitted honor a project's already-installed type automatically. First type: `candidate-interview`.
+- **Content types** — `agentic-cms init --type <name>` layers an optional domain on top of the typeless base scaffold: its own page templates, skills, and additive `CONTENT.md`/`CLAUDE.md` sections, composed via anchor-based fragments rather than full-file copies. `init`/`update` with `--type` omitted honor a project's already-installed type automatically (read from `.agentic-cms/TYPE.md`'s YAML frontmatter manifest). `init --type list` lists the types embedded in the binary. First type: **`candidate-interview`** — 34 templates, 4 skills (`interview-setup`, `interview-round`, `interview-rehearsal`, `interview-refresher`), and a runnable coding-exercise payload (`exercises/`), reverse-engineered from a lived-then-genericized fixture. `CONTENT.md` reconciliation now also detects a missing `## Type: <name>` section on a typed re-init, reported and sidecar'd the same way as a missing upstream base section.
 
 ## [0.7.0] - 2026-08-19
 

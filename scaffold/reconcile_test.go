@@ -41,7 +41,7 @@ func TestReconcileContentMDFreshInstallClean(t *testing.T) {
 	if _, err := Install(dir, testVersion); err != nil {
 		t.Fatal(err)
 	}
-	report, err := ReconcileContentMD(dir, "", testVersion)
+	report, err := ReconcileContentMD(dir, "", testVersion, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestReconcileContentMDMissingSection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	report, err := ReconcileContentMD(dir, "v0.6.2", "v0.7.0")
+	report, err := ReconcileContentMD(dir, "v0.6.2", "v0.7.0", "")
 	if err != nil {
 		t.Fatal(err)
 	}

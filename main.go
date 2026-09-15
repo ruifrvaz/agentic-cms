@@ -34,7 +34,13 @@ func resolvedVersion() string {
 const usage = `agentic-cms %s — agentic content management scaffolding
 
 Usage:
-  agentic-cms init [dir]   install the scaffolding into dir (default: .)
+  agentic-cms init [dir] [--type <name>]
+                            install the scaffolding into dir (default: .).
+                            --type layers a content type on top of the base
+                            scaffold; omitting it on a project that already
+                            has one installed re-applies that type.
+  agentic-cms init --type list
+                            list the content types embedded in this binary
   agentic-cms update       update the binary to the latest release, then
                             re-run init in the current directory if it looks
                             like an installed project
@@ -56,11 +62,17 @@ func main() {
 
 	switch os.Args[1] {
 	case "init":
-		dir := "."
-		if len(os.Args) > 2 {
-			dir = os.Args[2]
+		dir, typeName, err := parseInitArgs(os.Args[2:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "agentic-cms: %v\n\n", err)
+			fmt.Printf(usage, v)
+			os.Exit(2)
 		}
-		if err := runInit(dir, v); err != nil {
+		if typeName == "list" {
+			printAvailableTypes()
+			return
+		}
+		if err := runInit(dir, v, typeName); err != nil {
 			fmt.Fprintf(os.Stderr, "agentic-cms: %v\n", err)
 			os.Exit(1)
 		}
@@ -77,7 +89,51 @@ func main() {
 	}
 }
 
-func runInit(dir, version string) error {
+// parseInitArgs splits init's arguments into a target directory (default ".")
+// and an optional --type value, in either order ("init --type x dir" and
+// "init dir --type x" both work). "--type list" is recognized by the caller
+// as a request to print available types rather than install anything.
+func parseInitArgs(args []string) (dir, typeName string, err error) {
+	dir = "."
+	var positional []string
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--type" {
+			if i+1 >= len(args) {
+				return "", "", fmt.Errorf("--type requires a value")
+			}
+			typeName = args[i+1]
+			i++
+			continue
+		}
+		positional = append(positional, args[i])
+	}
+	if len(positional) > 0 {
+		dir = positional[0]
+	}
+	return dir, typeName, nil
+}
+
+func printAvailableTypes() {
+	types, err := scaffold.AvailableTypes()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "agentic-cms: listing content types: %v\n", err)
+		os.Exit(1)
+	}
+	if len(types) == 0 {
+		fmt.Println("No content types embedded in this binary.")
+		return
+	}
+	fmt.Println("Available content types:")
+	for _, t := range types {
+		fmt.Printf("  %s\n", t)
+	}
+}
+
+// runInit installs the scaffolding into dir. typeName selects a content type
+// to layer on top of the base scaffold; when empty, an already-installed
+// type recorded in dir's .agentic-cms/TYPE.md is honored automatically, so a
+// bare re-init or `update` never silently drops back to a typeless install.
+func runInit(dir, version, typeName string) error {
 	if runtime.GOOS != "linux" {
 		fmt.Fprintln(os.Stderr, "warning: agentic-cms currently targets Linux; proceeding anyway")
 	}
@@ -90,11 +146,23 @@ func runInit(dir, version string) error {
 		return fmt.Errorf("target %q is not a directory", dir)
 	}
 
+	if typeName == "" {
+		typeName = scaffold.InstalledType(dir)
+	}
+	if typeName != "" && !scaffold.HasType(typeName) {
+		available, _ := scaffold.AvailableTypes()
+		return fmt.Errorf("unknown content type %q (available: %v)", typeName, available)
+	}
+
 	abs, _ := os.Getwd()
 	if dir != "." {
 		abs = dir
 	}
-	fmt.Printf("Initializing agentic-cms scaffolding in %s\n", abs)
+	if typeName != "" {
+		fmt.Printf("Initializing agentic-cms scaffolding (type: %s) in %s\n", typeName, abs)
+	} else {
+		fmt.Printf("Initializing agentic-cms scaffolding in %s\n", abs)
+	}
 
 	// Read the previously installed scaffold generation before Install
 	// restamps .agentic-cms/VERSION with this binary's version.
@@ -107,9 +175,30 @@ func runInit(dir, version string) error {
 	if err := scaffold.InstallGitHook(dir, res); err != nil {
 		return err
 	}
+
+	if typeName != "" {
+		contentJustCreated := false
+		for _, f := range res.Created {
+			if f == "CONTENT.md" {
+				contentJustCreated = true
+				break
+			}
+		}
+		if err := scaffold.InstallType(dir, typeName, version, res); err != nil {
+			return err
+		}
+		if contentJustCreated {
+			if err := scaffold.ComposeTypeContentMD(dir, typeName); err != nil {
+				return err
+			}
+		}
+		if err := scaffold.InstallTypeClaudeMD(dir, typeName, res); err != nil {
+			return err
+		}
+	}
 	res.Print()
 
-	report, err := scaffold.ReconcileContentMD(dir, prevVersion, version)
+	report, err := scaffold.ReconcileContentMD(dir, prevVersion, version, typeName)
 	if err != nil {
 		return err
 	}

@@ -324,7 +324,7 @@ func checkAndReInit(dir, version string) {
 	}
 
 	fmt.Println("Detected .agentic-cms/ — re-initializing project scaffolding...")
-	if err := runInit(dir, version); err != nil {
+	if err := runInit(dir, version, ""); err != nil {
 		fmt.Fprintf(os.Stderr, "agentic-cms: %v\n", err)
 		os.Exit(1)
 	}
