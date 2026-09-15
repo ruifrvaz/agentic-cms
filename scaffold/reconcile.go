@@ -28,10 +28,19 @@ type ContentReport struct {
 // CONTENT.md — the schema file is user-co-evolved by design, and unlike
 // CLAUDE.md it has no managed-block convention to merge into.
 //
+// typeName, when non-empty, composes the active type's fragment into the
+// shipped reference before diffing — so a typed project's missing "## Type:
+// <name>" section is reported and sidecar'd the same way a missing upstream
+// base section is, and the sidecar reflects the full base+type schema a
+// manual merge needs. The three type edits that land inside existing base
+// sections (directory map, filename exception, the frontmatter type: enum)
+// are heading-invisible by construction and are not separately reconciled
+// here — they are fresh-install-only, applied once by ComposeTypeContentMD.
+//
 // Returns (nil, nil) when the installed CONTENT.md is absent (fresh install:
 // Install just wrote the current copy) or already carries every upstream
 // section heading.
-func ReconcileContentMD(dir, installedVersion, shippedVersion string) (*ContentReport, error) {
+func ReconcileContentMD(dir, installedVersion, shippedVersion, typeName string) (*ContentReport, error) {
 	installed, err := os.ReadFile(filepath.Join(dir, "CONTENT.md"))
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -45,6 +54,17 @@ func ReconcileContentMD(dir, installedVersion, shippedVersion string) (*ContentR
 		return nil, err
 	}
 	shippedText := strings.ReplaceAll(string(shipped), "{{DATE}}", time.Now().Format("2006-01-02"))
+
+	if typeName != "" {
+		frag, err := Types.ReadFile(typesRoot + "/" + typeName + "/content.fragment.md")
+		if err != nil {
+			return nil, err
+		}
+		shippedText, err = applyTypeFragment(shippedText, string(frag))
+		if err != nil {
+			return nil, fmt.Errorf("composing shipped CONTENT.md for type %q: %w", typeName, err)
+		}
+	}
 
 	installedHeadings := map[string]bool{}
 	for _, h := range sectionHeadings(string(installed)) {

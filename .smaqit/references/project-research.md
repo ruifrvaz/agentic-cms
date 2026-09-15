@@ -4,7 +4,7 @@ version: "1.1.0"
 
 # Project Research Map
 **Project:** agentic-cms
-**Refreshed:** 2026-08-15
+**Refreshed:** 2026-09-15
 
 | Tool | Section | URL |
 |------|---------|-----|
@@ -91,3 +91,14 @@ version: "1.1.0"
 | OpenAI Codex CLI | Hooks | https://learn.chatgpt.com/docs/hooks |
 | GitHub REST API | Releases | https://docs.github.com/en/rest/releases/releases |
 | Python 3 | re module | https://docs.python.org/3/library/re.html |
+
+## Task 013 — Content types: installer support + candidate-interview
+
+**Context fingerprint:** sha256:5f7cd3d1be34278b6f9f82cf83a3ef8934c394c1eda3e1a1eeac668a08b421c5
+**Refreshed:** 2026-09-15
+
+| Tool | Section | URL |
+|------|---------|-----|
+| Go | embed package | https://pkg.go.dev/embed |
+| YAML | Spec | https://yaml.org/spec/1.2.2/ |
+| Git | Documentation | https://git-scm.com/doc |
