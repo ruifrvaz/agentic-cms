@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Content types** (pending v0.8.0 · PR #10) — `agentic-cms init --type <name>` layers an optional domain on top of the typeless base scaffold: its own page templates, skills, and additive `CONTENT.md`/`CLAUDE.md` sections, composed via anchor-based fragments rather than full-file copies. `init`/`update` with `--type` omitted honor a project's already-installed type automatically. First type: `candidate-interview`.
+
 ## [0.7.0] - 2026-08-19
 
 ### Added
