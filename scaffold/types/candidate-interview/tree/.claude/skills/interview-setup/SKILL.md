@@ -20,8 +20,7 @@ the Classification section; the Type section lists this type's defaults.
    the target company (name, sector, HQ), the target role (title, team,
    scope), what already sits in `raw/` (a candidate-preparation guide, the
    CV, a job spec, recruiter mail), and the rounds as far as they are known
-   (or "unknown — derive from the guide"). Record company and role in
-   `AGENTS.md`'s Domain Context placeholders.
+   (or "unknown — derive from the guide").
 
 2. **Guard — greenfield only:**
    ```sh
