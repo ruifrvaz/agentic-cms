@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-09-14"
 mode: Assisted
 started: "2026-09-15"
-pr: 10
+completed: "2026-09-15"
 ---
 
 # Content types: installer support + candidate-interview
