@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-09-15"
 mode: Assisted
 started: "2026-09-15"
+pr: 11
 ---
 
 # Fix {{DATE}} substitution corrupting TYPE.md's own placeholder documentation
@@ -88,26 +89,46 @@ run again for the same reason.
 
 ## Acceptance Criteria
 
-- [ ] A fresh `agentic-cms init --type candidate-interview` no longer corrupts `.agentic-cms/TYPE.md`'s placeholder-name prose.
-- [ ] Regression test added and passing; `make test` and `make smoke-test` both pass.
+- [x] A fresh `agentic-cms init --type candidate-interview` no longer corrupts `.agentic-cms/TYPE.md`'s placeholder-name prose. Verified via a local dev build with the fix applied.
+- [x] Regression test added and passing; `make test` and `make smoke-test` both pass. Test verified to actually catch the bug (confirmed it fails against the pre-fix code, passes with the fix).
 - [ ] Released via PR flow as v0.8.1.
-- [ ] Verified live against the real released v0.8.1 binary.
+- [ ] Verified live against the real released v0.8.1 binary. *(Post-merge step, same pattern as task 013's criterion 8 — done once v0.8.1 is actually released.)*
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Added `.agentic-cms/TYPE.md` (via the existing `typeManifestFile` constant)
+  as a third exclusion in `InstallType`'s `{{DATE}}` substitution check,
+  alongside the pre-existing `.agentic-cms/templates/` and `exercises/`
+  exclusions — same mechanism, one more path.
+- Added the regression test right next to `TestInstallTypeOverlay`'s
+  existing `{{VERSION}}`-is-stamped assertion, since it's the natural
+  contrasting case: `{{VERSION}}` must resolve, `{{DATE}}` in this file
+  must not.
 
 **Decisions made:**
-- TBD
+- Verified the regression test actually catches the bug before trusting it:
+  stashed the fix, confirmed the test fails against the pre-fix code
+  (`TYPE.md's placeholder-name documentation lost its literal {{DATE}}
+  mention`), restored the fix, confirmed it passes. A test that was never
+  seen to fail is not verified.
+- Verified the fix live: built a local dev binary, fresh `init --type
+  candidate-interview`, confirmed `TYPE.md`'s prose reads intact with
+  `{{DATE}}` still literally present.
+- Scoped narrowly per the task's own Design Decisions — just excluded
+  `TYPE.md` from this one substitution, did not build a general
+  "documentation file" exclusion mechanism for a single known instance.
 
 **Blockers encountered:**
-- TBD
+- None.
 
 **Follow-up identified:**
-- TBD
+- Acceptance criterion 4 (verify against the real released v0.8.1 binary)
+  is a post-merge step, same pattern as task 013's criterion 8 — done once
+  v0.8.1 is actually released.
+- Layer 2 of the broader e2e validation (live skill run against a
+  synthetic engagement) was paused when this bug surfaced during Layer 1;
+  resumes once v0.8.1 is released and re-verified.
 
 ## Files to Create / Modify
 
