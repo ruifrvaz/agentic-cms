@@ -77,9 +77,13 @@ func InstallType(dir, name, version string, res *Result) error {
 		content := string(data)
 		// Templates keep {{DATE}} live for ac-page (page-creation time, not
 		// install time); exercises/ is non-markdown payload, same reasoning
-		// as the base tree's .agentic-cms/scripts/ exclusion.
+		// as the base tree's .agentic-cms/scripts/ exclusion. TYPE.md's own
+		// prose names {{DATE}} as one of ac-page's placeholders (documentation
+		// for a human/agent reader, not a live placeholder) — substituting it
+		// there corrupts that sentence into today's literal date.
 		if !strings.HasPrefix(rel, filepath.FromSlash(".agentic-cms/templates/")) &&
-			!strings.HasPrefix(rel, filepath.FromSlash("exercises/")) {
+			!strings.HasPrefix(rel, filepath.FromSlash("exercises/")) &&
+			rel != filepath.FromSlash(typeManifestFile) {
 			content = strings.ReplaceAll(content, "{{DATE}}", date)
 		}
 		if rel == filepath.FromSlash(typeManifestFile) {
