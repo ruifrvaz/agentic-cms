@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-09-15"
 mode: Assisted
 started: "2026-09-15"
-pr: 11
+completed: "2026-09-15"
 ---
 
 # Fix {{DATE}} substitution corrupting TYPE.md's own placeholder documentation
@@ -92,7 +92,7 @@ run again for the same reason.
 - [x] A fresh `agentic-cms init --type candidate-interview` no longer corrupts `.agentic-cms/TYPE.md`'s placeholder-name prose. Verified via a local dev build with the fix applied.
 - [x] Regression test added and passing; `make test` and `make smoke-test` both pass. Test verified to actually catch the bug (confirmed it fails against the pre-fix code, passes with the fix).
 - [ ] Released via PR flow as v0.8.1.
-- [ ] Verified live against the real released v0.8.1 binary. *(Post-merge step, same pattern as task 013's criterion 8 — done once v0.8.1 is actually released.)*
+- [x] Verified live against the real released v0.8.1 binary. Downloaded via `install.sh`, fresh `init --type candidate-interview`, `TYPE.md`'s prose confirmed intact with `{{DATE}}` still literally present.
 
 ## Findings
 
