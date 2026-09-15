@@ -67,7 +67,7 @@ C2-sensitive; they stay in-session unless explicitly filed via step 5.
      with immediate debrief after the answer.
    - **Coding-round mechanics** (when the round's format includes a live
      coding drill): it runs against a real `exercises/NNN-*/` module (per
-     AGENTS.md's convention). Pick the next unattempted exercise — or, if
+     CONTENT.md's convention). Pick the next unattempted exercise — or, if
      none remains, author a fresh one first (broken implementation + full
      test suite, verified against a reference solution before handing over,
      reference never shown). Set the time budget the plan page specifies.
@@ -75,7 +75,7 @@ C2-sensitive; they stay in-session unless explicitly filed via step 5.
      react to what the user reports — probing methodology, pressing on clock
      awareness, never handing over fixes. The debrief afterwards reviews the
      actual diff. A per-attempt debrief page also belongs in the CMS per
-     AGENTS.md (exercise folders themselves stay outside the CMS layers).
+     CONTENT.md (exercise folders themselves stay outside the CMS layers).
    - **Format-pivot rule**: in `full` mode, deliberately deviate from the
      plan's predicted structure at least once — an unexpected framing, a
      metaphor hiding a technical model, or an axis entered through an

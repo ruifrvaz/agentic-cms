@@ -23,7 +23,7 @@ pages it reads and writes. Rate every page written at write time per CONTENT.md.
    - The relevant round's plan page (found via `docs/interview-prep/README.md`'s
      Rounds table) — the anchors the gaps were scored against.
    - The wiki concept pages relevant to the named gaps (whatever technology
-     or domain each gap is about — see AGENTS.md's "Company stack in the
+     or domain each gap is about — see CONTENT.md's "Company stack in the
      wiki" section for where that content should live).
    - If `NNN-refresher.md` already exists, resume at its current state (unit
      checkboxes) instead of re-authoring; if `NNN-exam.md` exists ungraded,
