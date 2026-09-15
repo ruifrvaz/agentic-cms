@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-09-15
+
 ### Fixed
 
 - **`candidate-interview` type skills no longer reference the wrong schema file** — `interview-setup`, `interview-refresher`, and `interview-rehearsal` pointed at `AGENTS.md` (smaqit-owned, excluded from typed installs) for content that actually lives in `CONTENT.md`'s own Type section; `interview-setup`'s redundant instruction was dropped outright. Found via a live run of all four type skills against a synthetic engagement.
