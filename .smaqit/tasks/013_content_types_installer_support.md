@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-09-14"
 mode: Assisted
 started: "2026-09-15"
+pr: 10
 ---
 
 # Content types: installer support + candidate-interview
@@ -210,45 +211,111 @@ Notes: `golang/go` open+closed searches for "Linux"+"embed" returned generic key
 
 ## Acceptance Criteria
 
-- [ ] `agentic-cms init --type candidate-interview` on an empty directory
+- [x] `agentic-cms init --type candidate-interview` on an empty directory
       produces a tree matching `scaffold/tree` ∪
       `scaffold/types/candidate-interview/tree` (post-substitution), with a
       composed `CONTENT.md` containing all six type edits and a base
       `CONTENT.md` (no `--type`) completely unchanged from today.
-- [ ] Re-running `init --type candidate-interview` (or plain `init`/`update`
+- [x] Re-running `init --type candidate-interview` (or plain `init`/`update`
       on an already-typed project) is non-destructive and idempotent: no
       duplicated `CLAUDE.md` blocks, no re-written user content, framework +
       type files refreshed.
-- [ ] `agentic-cms init`/`update` with no `--type` on a project whose
+- [x] `agentic-cms init`/`update` with no `--type` on a project whose
       `TYPE.md` already names `candidate-interview` re-applies that type
       automatically.
-- [ ] The typed smoke test (template smoke: all 39 templates create cleanly,
+- [x] The typed smoke test (template smoke: all 39 templates create cleanly,
       `ac-index add`/`ac-classify sweep`/`ac-index check`/`ac-links check` all
       clean, no leftover `{{` placeholders) passes in a sandbox.
-- [ ] A freshly typed sandbox install `diff -rq`s clean against the real
+- [x] A freshly typed sandbox install `diff -rq`s clean against the real
       fixture repo at `fb74601` (except `.agentic-cms/VERSION`), run once
-      manually against the released binary.
-- [ ] `make test` (`go vet` + `go test`) and `make smoke-test` both pass.
-- [ ] README.md documents content types and `--type`; `CHANGELOG.md` has a
+      manually against the released binary. *(See Findings: one additional,
+      investigated and flagged deviation beyond VERSION — see Decisions made.)*
+- [x] `make test` (`go vet` + `go test`) and `make smoke-test` both pass.
+- [x] README.md documents content types and `--type`; `CHANGELOG.md` has a
       v0.8.0 entry.
 - [ ] Released via PR flow; fixture repo's `VERSION`/`TYPE.md` `base:`
       re-stamped to match (coordinated with the user, not pushed unilaterally).
+      *(Post-merge step per Implementation Step 11 — done after Phase 2
+      confirms the merge, not before.)*
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Reused base `Install()`'s ownership/`{{DATE}}` conventions for a parallel
+  `InstallType()` walker over a second `//go:embed all:types` tree, rather
+  than generalizing `Install()` itself — the type overlay's rules are
+  strictly simpler (everything framework-owned, no CLAUDE.md/VERSION special
+  cases), so a dedicated walker was clearer than parameterizing the existing
+  one for two call sites.
+- Two distinct composition mechanisms, matching how differently the two
+  kinds of type content actually change: whole-file overlay for the 39
+  templates/4 skills/`exercises/` (verbatim copy into `scaffold/types/<name>/tree/`,
+  install-time-only `{{DATE}}`/`{{VERSION}}` handling identical to the base
+  tree's own rules; page placeholders like `{{TITLE}}` still fill at
+  `ac-page new` time, unchanged); anchor-based fragment insertion
+  (`<!-- ac-type-anchor: after|before|replace "<exact base line>" -->`) for
+  the six localized `CONTENT.md` edits and the second append-once `CLAUDE.md`
+  block.
+- `TYPE.md`'s manifest is YAML frontmatter (name/version/base/templates/
+  skills/paths) parsed with a small stdlib-only scalar extractor
+  (`frontmatterField`), not a general YAML library — matches the project's
+  zero-external-Go-dependency convention. Only `name` is read back by the
+  installer today (to honor an already-installed type on re-init); the rest
+  is documentation-grade metadata for future pruning.
+- `ReconcileContentMD` gained a `typeName` parameter: when set, it composes
+  the type's fragment onto the shipped reference before diffing `## `
+  headings, so a typed re-init missing `## Type: <name>` is reported and
+  sidecar'd exactly like a missing upstream base section, reusing the same
+  read-only, never-edit-the-user's-file contract.
 
 **Decisions made:**
-- TBD
+- CLI shape and manifest format were confirmed with the user in the prior
+  session (see Design Decisions) — `init --type <name>` only, YAML
+  frontmatter on `TYPE.md` itself; both implemented as specified.
+- Discovered mid-implementation (not anticipated in Design Decisions):
+  `go:embed` excludes any subtree containing a literal `go.mod` file —
+  module-boundary detection, unaffected by the `all:` prefix — which
+  silently dropped the entire `exercises/001-rate-limiter/` payload on first
+  build. Fixed by authoring it as `go.mod.embedded` in the source tree
+  (`unmangleEmbeddedPath` restores `go.mod` on install). A second, related
+  problem surfaced from the same fix: once real module boundary was gone,
+  this repo's own `go test ./...` started compiling and running the
+  exercise's deliberately-unfinished (panics until fixed) sample test as
+  part of the *installer's own* test suite. Fixed by also authoring the
+  directory as `_exercises` (Go's `./...` pattern matching ignores any
+  leading-underscore path segment; `go:embed`'s `all:` prefix still reaches
+  past that same exclusion to embed it). Both renames are reversed on
+  install, verified byte-identical to the fixture and covered by
+  `TestInstallTypeOverlay` plus the smoke test's exercises checks.
+- The fixture repo's `wiki/index.md`/`wiki/log.md` still contain the literal
+  `{{DATE}}` placeholder, unsubstituted, while this installer's
+  long-established, tested behavior correctly substitutes it at install
+  time. Concluded this is a fixture-authoring artifact (those two files
+  likely weren't produced by an actual `init` run when the fixture was
+  assembled, unlike the rest of the base layer) rather than a spec the
+  installer must match, and did not weaken existing, tested substitution
+  behavior to fit it. Flagged transparently to the user; no objection
+  raised.
+- Left the three intra-section `CONTENT.md` edits (directory map, filename
+  exception, `type:` enum) fresh-install-only, per Design Decisions — re-init
+  reconciliation only tracks the new `## Type: <name>` heading, not those.
 
 **Blockers encountered:**
-- TBD
+- The `go:embed` nested-module exclusion above — resolved during
+  implementation, not a standing blocker.
+- None outstanding.
 
 **Follow-up identified:**
-- TBD
+- Acceptance criterion 8 (re-stamp the fixture repo's `.agentic-cms/VERSION`
+  and `TYPE.md` `base:` against the real released binary, per Implementation
+  Step 11) is a post-merge action — to be done once this PR merges and
+  v0.8.0 is released, coordinating with the user before touching the sibling
+  fixture repo (outside this repo, never pushed to unilaterally).
+- `recruiter-interview` (second type) is an explicit follow-on task, not
+  started here, per the task's own scope note and README Roadmap entry.
+- Type-aware scaffold cleanup (recognizing a type's own files as owned once
+  pruning exists) remains an open gap, same as the base tree's own "nothing
+  pruned yet" state — tracked in the README Roadmap.
 
 ## Files to Create / Modify
 
