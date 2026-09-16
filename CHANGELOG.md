@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-16
+
 ### Added
 
 - **Second content type: `recruiter-interview`** — the hiring side of the same domain as `candidate-interview`: define a requisition's role and competencies, design the interview loop, take candidates through it with evidence-based scorecards, and reach decisions. Candidates are referred to by an opaque slug everywhere outside their own confidential pages, and candidate documents are never stored in `raw/`. Implemented with **zero changes to the task-013 installer mechanism** — `agentic-cms init --type recruiter-interview` works purely by adding a new `scaffold/types/recruiter-interview/` payload, proving the content-type mechanism generalizes beyond its first type as designed.
