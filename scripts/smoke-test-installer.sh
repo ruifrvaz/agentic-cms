@@ -7,11 +7,11 @@
 #   - a greenfield install matches scaffold/tree/ (after {{DATE}} substitution)
 #   - a second run is idempotent (no re-creates, no overwrites)
 #   - a brownfield CLAUDE.md gets the managed block merged, not duplicated
-#   - a typed install (--type candidate-interview) composes CONTENT.md/
-#     CLAUDE.md, installs the type overlay (including the exercises/ payload),
-#     every template (base + type) creates and indexes cleanly, a bare re-init
-#     honors the recorded type, and reconciliation reports a missing Type
-#     section
+#   - a typed install (--type candidate-interview, and --type
+#     recruiter-interview) composes CONTENT.md/CLAUDE.md, installs the type
+#     overlay (including the exercises/ payload), every template (base +
+#     type) creates and indexes cleanly, a bare re-init honors the recorded
+#     type, and reconciliation reports a missing Type section
 #   - init against an invalid target directory fails with a non-zero exit
 #   - --version / --help behave
 #
@@ -312,6 +312,7 @@ echo "-- typed install: candidate-interview --"
 
 list_out="$("$BINARY" init --type list 2>&1)"
 assert_contains "$list_out" "candidate-interview" "init --type list shows the embedded candidate-interview type"
+assert_contains "$list_out" "recruiter-interview" "init --type list shows the embedded recruiter-interview type"
 
 mkdir -p "$SANDBOX/typed-unknown"
 set +e
@@ -418,6 +419,111 @@ assert_contains "$out" "CONTENT.md reconciliation" "re-init over a typed project
 assert_contains "$out" "Type: candidate-interview" "reconciliation report names the missing Type section"
 assert_contains "$(cat "$TYPED_RECON/.agentic-cms/CONTENT.upstream.md")" "## Type: candidate-interview" "sidecar carries the composed base+type schema"
 assert_no_line_matches "$(cat "$TYPED_RECON/CONTENT.md")" "## Type: candidate-interview" "reconciliation did not edit the user's CONTENT.md"
+
+# --- 4d. Second type: recruiter-interview (proves the mechanism generalizes) ---
+# Mirrors 4-4c above but for the second content type — not generalized into a
+# shared loop because the two types' assertions genuinely differ (recruiter
+# ships no new page type, so no frontmatter type: enum check; its exercises/
+# payload carries an extra interviewer-only GRADING.md) rather than only
+# differing by name.
+echo
+echo "-- typed install: recruiter-interview --"
+TYPED2="$SANDBOX/typed-recruiter"
+mkdir -p "$TYPED2"
+out="$("$BINARY" init "$TYPED2" --type recruiter-interview 2>&1)"
+printf '%s\n' "$out" | sed 's/^/    /'
+assert_contains "$out" "(type: recruiter-interview)" "typed install announces the active type"
+assert_no_line_matches "$out" "  skipped  " "fresh typed install reports no skips"
+assert_contains "$out" "  merged   CLAUDE.md (type block appended)" "typed install appends the type's CLAUDE.md block"
+
+if [[ -f "$TYPED2/exercises/001-rate-limiter/go.mod" ]]; then
+    pass "exercises/ payload installed with its go.mod restored"
+else
+    fail "exercises/ payload installed with its go.mod restored — missing"
+fi
+if [[ -f "$TYPED2/exercises/001-rate-limiter/GRADING.md" ]]; then
+    pass "interviewer-only GRADING.md installed alongside the take-home"
+else
+    fail "interviewer-only GRADING.md installed alongside the take-home — missing"
+fi
+if [[ -f "$TYPED2/.agentic-cms/templates/scorecard.md" ]]; then
+    pass "a type template (scorecard.md) installed alongside the base templates"
+else
+    fail "a type template (scorecard.md) installed alongside the base templates — missing"
+fi
+content2="$(cat "$TYPED2/CONTENT.md")"
+assert_contains "$content2" "## Type: recruiter-interview" "composed CONTENT.md carries the type section"
+assert_contains "$content2" "## Classification" "composed CONTENT.md still carries the base schema"
+assert_contains "$content2" "cNNN-profile.md" "composed CONTENT.md carries the candidate-slug filename exception"
+if [[ "$content2" == *'{{'* ]]; then fail "composed CONTENT.md left an unfilled {{ }} placeholder"; else pass "composed CONTENT.md has no leftover {{ }} placeholder"; fi
+claude_content2="$(cat "$TYPED2/CLAUDE.md")"
+assert_contains "$claude_content2" "<!-- agentic-cms:begin -->" "typed install still carries the base CLAUDE.md block"
+assert_contains "$claude_content2" "<!-- agentic-cms:type:recruiter-interview:begin -->" "typed install carries the type's CLAUDE.md block"
+type_md2="$(cat "$TYPED2/.agentic-cms/TYPE.md")"
+if [[ "$type_md2" == *'{{VERSION}}'* ]]; then fail "TYPE.md left the {{VERSION}} placeholder unfilled"; else pass "TYPE.md's base: version is stamped"; fi
+assert_contains "$type_md2" '{{DATE}}' "TYPE.md's placeholder-name documentation still names {{DATE}} literally (task 014 regression class)"
+
+echo
+echo "-- typed install: template smoke (recruiter-interview, all templates create cleanly) --"
+pushd "$TYPED2" >/dev/null
+tmpl_count2=0
+for tmpl_path in .agentic-cms/templates/*.md; do
+    tmpl="$(basename "$tmpl_path" .md)"
+    section="topics"
+    case "$tmpl" in
+        entity*) section="entities" ;;
+        concept*) section="concepts" ;;
+        source*) section="sources" ;;
+    esac
+    page_out="$(.agentic-cms/scripts/ac-page new "$tmpl" "docs/smoke-type/$tmpl.md" --title "Smoke $tmpl" --topic smoke-type)"
+    if [[ "$page_out" != *'"ok": true'* ]]; then fail "ac-page new $tmpl — got: $page_out"; continue; fi
+    if [[ "$(cat "docs/smoke-type/$tmpl.md")" == *'{{'* ]]; then
+        fail "template $tmpl left an unfilled {{ }} placeholder"
+    fi
+    .agentic-cms/scripts/ac-index add "$section" "docs/smoke-type/$tmpl.md" "smoke test page ($tmpl)" >/dev/null
+    tmpl_count2=$((tmpl_count2 + 1))
+done
+pass "created and indexed $tmpl_count2 templates (base + recruiter-interview) with no leftover placeholders"
+
+check_out2="$(.agentic-cms/scripts/ac-index check)"
+assert_contains "$check_out2" '"clean": true' "ac-index check reports clean after the full template sweep"
+links_out2="$(.agentic-cms/scripts/ac-links check)"
+assert_contains "$links_out2" '"clean": true' "ac-links check reports clean after the full template sweep"
+sweep_out2="$(.agentic-cms/scripts/ac-classify sweep)"
+assert_contains "$sweep_out2" '"ok": true' "ac-classify sweep runs clean over every created template page"
+popd >/dev/null
+
+echo
+echo "-- typed install: recruiter-interview idempotent re-run + implicit type --"
+out="$("$BINARY" init "$TYPED2" 2>&1)"
+printf '%s\n' "$out" | sed 's/^/    /'
+assert_contains "$out" "(type: recruiter-interview)" "re-init with --type omitted still honors the recorded type"
+assert_no_line_matches "$out" "  created  " "typed re-init creates no new files"
+marker_count2="$(grep -o '<!-- agentic-cms:type:recruiter-interview:begin -->' "$TYPED2/CLAUDE.md" | wc -l)"
+if [[ "$marker_count2" -eq 1 ]]; then
+    pass "type CLAUDE.md block not duplicated on re-init"
+else
+    fail "type CLAUDE.md block duplicated on re-init (found $marker_count2 begin markers)"
+fi
+
+echo
+echo "-- typed install: recruiter-interview CONTENT.md reconciliation --"
+TYPED2_RECON="$SANDBOX/typed-recruiter-reconcile"
+mkdir -p "$TYPED2_RECON"
+"$BINARY" init "$TYPED2_RECON" --type recruiter-interview >/dev/null
+python3 - "$TYPED2_RECON/CONTENT.md" <<'PYEOF'
+import sys
+path = sys.argv[1]
+text = open(path).read()
+start = text.index("## Type: recruiter-interview")
+end = text.index("## Operations")
+open(path, "w").write(text[:start] + text[end:])
+PYEOF
+out="$("$BINARY" init "$TYPED2_RECON" 2>&1)"
+printf '%s\n' "$out" | sed 's/^/    /'
+assert_contains "$out" "CONTENT.md reconciliation" "re-init over a typed project missing its Type section emits a reconciliation report"
+assert_contains "$out" "Type: recruiter-interview" "reconciliation report names the missing Type section"
+assert_no_line_matches "$(cat "$TYPED2_RECON/CONTENT.md")" "## Type: recruiter-interview" "reconciliation did not edit the user's CONTENT.md"
 
 # --- 5. Invalid target directory ---
 echo
