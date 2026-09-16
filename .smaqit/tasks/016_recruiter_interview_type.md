@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: PR Open
 created: "2026-09-15"
 mode: Assisted
 started: "2026-09-15"
+pr: 13
 ---
 
 # Second content type: recruiter-interview
@@ -208,21 +209,24 @@ no external dependency is implicated.
 
 ## Acceptance Criteria
 
-- [ ] `agentic-cms init --type recruiter-interview` on an empty directory
+- [x] `agentic-cms init --type recruiter-interview` on an empty directory
       produces a tree matching `scaffold/tree` ∪
       `scaffold/types/recruiter-interview/tree` (post-substitution), with a
-      composed `CONTENT.md` containing all seven type edits and the base
-      `CONTENT.md`/`candidate-interview`-typed installs completely
-      unaffected.
-- [ ] Implemented with **zero changes to existing Go logic** — or, if not,
-      the specific gap is documented as a finding, not silently patched
-      around.
-- [ ] `make test` and `make smoke-test` both pass, including new coverage
-      for `recruiter-interview` mirroring `candidate-interview`'s.
-- [ ] A freshly typed sandbox install `diff -rq`s clean against the real
+      composed `CONTENT.md` containing all nine anchor edits (six edit
+      *categories*, not seven as originally estimated — see Findings) and
+      the base `CONTENT.md`/`candidate-interview`-typed installs completely
+      unaffected (verified directly: `TestTwoTypesDoNotLeakIntoEachOther`).
+- [x] Implemented with **zero changes to existing Go logic** — confirmed:
+      `git status` shows only a new test file and the new type payload; no
+      existing `.go` file was touched.
+- [x] `make test` and `make smoke-test` both pass, including new coverage
+      for `recruiter-interview` mirroring `candidate-interview`'s (97 smoke
+      checks, 0 failures; 6 new Go tests).
+- [x] A freshly typed sandbox install `diff -rq`s clean against the real
       fixture repo (except `VERSION` and the same already-understood
-      deviation classes from task 013), run once manually against the
-      released binary.
+      deviation classes from task 013) — verified against a local dev
+      build. *(Re-verification against the released binary is Implementation
+      Step 11's live validation, below.)*
 - [ ] Released via PR flow.
 - [ ] Live synthetic-dry-run validation (Implementation Step 11) completed
       against the real released binary, independently re-verified (not
@@ -231,19 +235,82 @@ no external dependency is implicated.
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Verified the fixture live before writing anything (git log, tag list,
+  template/skill/exercise counts, base-layer byte-identity, `CONTENT.md`/
+  `CLAUDE.md` diffs, `TYPE.md` contents) rather than relying on the prior
+  handoff's recollection — caught the real anchor-count difference (see
+  Decisions made) this way.
+- Imported the overlay (29 templates, 4 skills, `exercises/001-rate-limiter/`
+  with its `GRADING.md`) using the exact same `go.mod` → `go.mod.embedded`
+  and `exercises` → `_exercises` renames task 013 established — both
+  worked unmodified for a second type, confirming `unmangleEmbeddedPath`'s
+  path-pattern-based (not type-name-based) design was the right call.
+- Extracted `content.fragment.md`/`claude.fragment.md` and verified each
+  byte-for-byte against the live fixture with the same throwaway
+  `apply_fragment.py` technique task 013 used, before ever touching the Go
+  path — caught nothing wrong, but this is what would have caught a
+  mistake before it reached a test.
+- Wrote `TYPE.md` with YAML frontmatter matching `candidate-interview`'s
+  task-013 shape; adapted its prose the same way (dropped "Installer
+  gaps" — closed; dropped the fixture-authoring self-check recipe; kept
+  and generalized the fixture's own "Acceptance" section into an
+  "Acceptance shape" section).
+- Ran `agentic-cms init --type recruiter-interview` against the existing,
+  completely unmodified `InstallType`/`ComposeTypeContentMD`/
+  `InstallTypeClaudeMD`/`ReconcileContentMD` — worked on the first attempt.
+  `git status` after full implementation shows zero changes to any existing
+  `.go` file — only a new test file and the new type payload.
+- Proactively fixed the same `AGENTS.md`→should-be-nothing bug task 015
+  found in `candidate-interview`'s `interview-setup` skill, found here in
+  `recruiter-setup`'s own "Record the requisition in AGENTS.md's Domain
+  Context" sentence — same root cause (both fixtures were authored inside
+  their own smaqit projects), same established resolution (drop the
+  sentence; the facts are captured properly a few steps later via
+  `job-spec.md`/`company-overview.md`). Fixed inline rather than shipping
+  a known-duplicate bug and filing a redundant follow-up task.
 
 **Decisions made:**
-- TBD
+- **Corrected an estimate from task creation**: the task description
+  guessed "seven edit points, not six," but the real `diff -U1` shows the
+  same **9 anchor commands** as `candidate-interview` (directory map ×4,
+  filenames exception, Type section, Operations paragraph, Greenfield
+  sentence, Brownfield sentence = 6 *categories*, one of which — directory
+  map — is 4 anchors) — recruiter-interview swaps out the frontmatter
+  `type:` enum edit (no new page type here) for a Brownfield-bullet edit
+  `candidate-interview` doesn't have. Net anchor count is identical (9);
+  only the composition differs. Verified against the actual fixture diff,
+  not re-estimated.
+- **Duplicated, not generalized, the smoke test's typed-install section**
+  for the second type, per the task's own judgment-call framing: the two
+  types' assertions genuinely differ (recruiter has no frontmatter-enum
+  check but does have an extra `GRADING.md` check), so a shared loop would
+  need internal branching anyway — two clear, independently-debuggable
+  sections read better than one branchy generic one, consistent with this
+  project's own "don't add abstraction beyond what's needed" convention.
+- Extended `README.md`'s Content types section to describe both types side
+  by side and removed the now-delivered "second content type" Roadmap
+  bullet.
 
 **Blockers encountered:**
-- TBD
+- None. This was the cleanest of the four type-related tasks this
+  session — the mechanism genuinely generalized with zero Go changes,
+  exactly as task 013's own design intended.
 
 **Follow-up identified:**
-- TBD
+- Acceptance criterion 6 (post-release live synthetic-dry-run validation
+  through all four `recruiter-*` skills, independently re-verified) is
+  explicitly required before this task is considered fully proven, per
+  its own wording — same post-merge pattern as task 013's criterion 8 and
+  tasks 014/015's final criterion. Plan: complete this task's normal PR
+  lifecycle first (matching the established convention that a task closes
+  on merge, with any live-validation finding tracked as its own follow-up
+  task, exactly how 014 and 015 emerged from 013's own validation), then
+  run the live validation immediately after in the same session.
+- No fixture repo re-stamping is needed here (unlike task 013's criterion
+  8) — this fixture has no lived reference to keep in sync, and per the
+  user's own explicit ruling earlier this session, fixture repos are
+  disposable validation artifacts, not golden copies to maintain.
 
 ## Files to Create / Modify
 
