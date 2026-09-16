@@ -96,13 +96,22 @@ whichever type a project already has installed, read from
 `.agentic-cms/TYPE.md`; type files refresh on every run exactly like the
 base scaffold's own skills and templates.
 
-The first type, **`candidate-interview`**, is a personal knowledge base for
-running one job-interview recruitment process end to end: company and role
-research, per-round plans and debriefs, a mock-interview practice loop with
-scored debriefs and a gap-course/exam cycle, and an illustrative coding-drill
-exercise. It was lived first (a real, genericized hiring process) and
-abstracted second — see `.agentic-cms/TYPE.md` in a typed install for the
-full manifest.
+Two types ship today, opposite sides of the same hiring process:
+
+- **`candidate-interview`** — a personal knowledge base for running one
+  job-interview recruitment process end to end, from the candidate's side:
+  company and role research, per-round plans and debriefs, a mock-interview
+  practice loop with scored debriefs and a gap-course/exam cycle, and an
+  illustrative coding-drill exercise. It was lived first (a real,
+  genericized hiring process) and abstracted second.
+- **`recruiter-interview`** — the hiring side of the same process, for one
+  requisition: define the role and its competencies, design the interview
+  loop, take candidates through it with evidence-based scorecards, and
+  reach decisions. Candidates are referred to by an opaque slug everywhere
+  outside their own confidential pages, and their documents are never
+  stored in `raw/`.
+
+See `.agentic-cms/TYPE.md` in a typed install for a type's full manifest.
 
 ## Classification
 
@@ -281,8 +290,6 @@ run against a `mktemp` sandbox, diffed against `scaffold/tree/` (after resolving
   renamed scaffold files (upgraded installs keep the stale
   `content-new-item/` skill dir alongside its replacement `content-manage-item/`)
 - Optional MCP: local search over the wiki (qmd-style) for large content bases
-- A second content type (`recruiter-interview`), to prove the type mechanism
-  generalizes beyond `candidate-interview`
 - Type-aware scaffold cleanup: once pruning exists, recognize a type's own
   files as owned rather than relying on "nothing is pruned yet"
 
