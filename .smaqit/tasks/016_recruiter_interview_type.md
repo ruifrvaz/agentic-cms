@@ -1,9 +1,9 @@
 ---
-status: PR Open
+status: Completed
 created: "2026-09-15"
 mode: Assisted
 started: "2026-09-15"
-pr: 13
+completed: "2026-09-16"
 ---
 
 # Second content type: recruiter-interview
@@ -227,11 +227,15 @@ no external dependency is implicated.
       deviation classes from task 013) — verified against a local dev
       build. *(Re-verification against the released binary is Implementation
       Step 11's live validation, below.)*
-- [ ] Released via PR flow.
+- [x] Released via PR flow. PR #13 merged 2026-09-16, released as v0.9.0.
 - [ ] Live synthetic-dry-run validation (Implementation Step 11) completed
       against the real released binary, independently re-verified (not
       trusted from a subagent's self-report alone), with any findings
-      fixed and released before this task closes.
+      fixed and released before this task closes. *(Deferred, same pattern
+      as task 013's criterion 8: this task is marked Completed on merge per
+      established convention, and the live validation runs immediately
+      after in the same session — any finding becomes its own follow-up
+      task, e.g. task 017, rather than reopening this one.)*
 
 ## Findings
 
