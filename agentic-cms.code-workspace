@@ -3,10 +3,6 @@
     {
       "name": "main",
       "path": "."
-    },
-    {
-      "name": "task/013-content-types-installer-support-candidate-interview",
-      "path": "../agentic-cms-wt-task-013-content-types-installer-support-candidate-interview"
     }
   ],
   "settings": {

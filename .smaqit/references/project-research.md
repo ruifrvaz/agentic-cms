@@ -102,3 +102,36 @@ version: "1.1.0"
 | Go | embed package | https://pkg.go.dev/embed |
 | YAML | Spec | https://yaml.org/spec/1.2.2/ |
 | Git | Documentation | https://git-scm.com/doc |
+
+## Task 014 — Fix {{DATE}} substitution corrupting TYPE.md's own placeholder documentation
+
+**Context fingerprint:** sha256:21fdc23143e5b47f708093869baaf174bcc9bccc6504c2d7667fcb4d79bede95
+**Refreshed:** 2026-09-15
+
+| Tool | Section | URL |
+|------|---------|-----|
+| Go | Getting Started | https://go.dev/doc/tutorial/getting-started |
+
+## Task 015 — Fix stale AGENTS.md references in candidate-interview type skill files
+
+**Context fingerprint:** sha256:f2a401aff59fff1d0da9c5a6ec2e083c46e94ce4d3d9fb2e0af2f7fb50120e2c
+**Refreshed:** 2026-09-15
+
+| Tool | Section | URL |
+|------|---------|-----|
+
+## Task 016 — Second content type: recruiter-interview
+
+**Context fingerprint:** sha256:4416508ffd9bc1e8ab9ea0fe669e804a7c698c0e0c743049599b262f4eb76ca9
+**Refreshed:** 2026-09-15
+
+| Tool | Section | URL |
+|------|---------|-----|
+
+## Task 017 — Live e2e validation: recruiter-interview candidate workflow
+
+**Context fingerprint:** sha256:f72cd5047dcec5d030e4d473c7f86eb5fdb1a347de472b3de9a33e8732cd6adf
+**Refreshed:** 2026-09-18
+
+| Tool | Section | URL |
+|------|---------|-----|
