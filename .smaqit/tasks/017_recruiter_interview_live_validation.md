@@ -1,8 +1,9 @@
 ---
-status: In Progress
+status: Completed
 created: "2026-09-18"
 mode: Assisted
 started: "2026-09-18"
+completed: "2026-09-18"
 ---
 
 # Live e2e validation: recruiter-interview candidate workflow
@@ -120,33 +121,72 @@ no external dependency is implicated.
 
 ## Acceptance Criteria
 
-- [ ] Layer 1 (real `v0.9.0` binary, fresh typed install) confirmed clean.
-- [ ] Layer 2 live skill run completed through all four `recruiter-*`
-      skills, covering setup, both rounds, 3-candidate intake and scoring,
-      a reference check, and a decision.
-- [ ] Independently re-verified — `ac-index check`/`ac-links
-      check`/`ac-classify sweep` re-run directly (not taken from the
-      subagent's report), at least two pages spot-read for real content,
-      and a roster/index/log grep confirms zero candidate-name leakage
-      outside the two permitted C2 pages per candidate.
-- [ ] Findings recorded; any defect found is filed as its own follow-up
+- [x] Layer 1 (real `v0.9.0` binary, fresh typed install) confirmed clean.
+      Zero `AGENTS.md` references, `TYPE.md`'s `{{DATE}}` intact and
+      `{{VERSION}}` stamped, all 34 templates create/index/link/classify
+      clean.
+- [x] Layer 2 live skill run completed through all four `recruiter-*`
+      skills, covering setup, both rounds, 3-candidate intake and scoring
+      (6 scorecards), a reference check, and a decision (offer + 2
+      archives) — fictional requisition "Cascade Ledger / Staff Data
+      Engineer", candidates `c001`/`c002`/`c003`.
+- [x] Independently re-verified — `ac-index check`/`ac-links
+      check`/`ac-classify sweep` re-run directly by me (not taken from the
+      subagent's report): all clean, 265/265 links, 45 pages, 0 floor
+      violations, `bleed: []`. Spot-read the c002 onsite scorecard and the
+      decision record — genuine evidence-shaped content, correctly
+      structured, correctly uses slugs throughout. Independently grepped
+      all three candidates' real (fictional) names across the whole tree,
+      including `wiki/index.md`/`wiki/log.md` directly — each name found
+      in exactly its own `wiki/entities/cNNN.md` + `docs/candidates/
+      [archive/]cNNN-profile.md`, nowhere else. Also confirmed `raw/`
+      carries no candidate documents (Retention rule) and
+      `exercises/001-rate-limiter/`'s code was never modified.
+- [x] Findings recorded; any defect found is filed as its own follow-up
       task rather than fixed silently inline.
 
 ## Findings
 
-[Populated by smaqit.task-complete. Do not fill in manually before task is complete.]
-
 **Implementation approach:**
-- TBD
+- Layer 1 run directly (no agent): downloaded the real `v0.9.0` release
+  via `install.sh`, fresh `init --type recruiter-interview`, re-confirmed
+  the task-015-class `AGENTS.md` fix and the task-014-class `{{DATE}}` fix
+  both hold for this type, then a full 34-template smoke.
+- Layer 2 run via a `general-purpose` subagent given a fully
+  self-contained prompt (fresh fictional company "Cascade Ledger" /
+  role "Staff Data Engineer", explicit candidate profiles engineered to
+  produce one strong hire, one hireable-but-not-selected, and one clear
+  no-hire, so the decision record would have real signal to reason about
+  rather than three interchangeable candidates).
+- Independently re-verified every claim in the subagent's report rather
+  than accepting it: re-ran all three health checks myself directly
+  against its sandbox, re-did the candidate-name grep myself from
+  scratch (not trusting its self-reported grep), spot-read two full
+  pages (a scorecard, the decision record) for substance, and checked
+  two things the subagent's report didn't explicitly claim but the
+  type's own rules require: `raw/` has no candidate documents (Retention
+  rule) and `exercises/001-rate-limiter/`'s code was never touched.
 
 **Decisions made:**
-- TBD
+- This run found **no defects** — a genuinely different outcome from
+  `candidate-interview`'s equivalent validation (which found 2 real bugs,
+  tasks 014/015). Concluded this is plausible, not a validation that
+  didn't try hard enough: `recruiter-interview`'s skills had only the one
+  `AGENTS.md` issue to begin with, and that was already proactively fixed
+  during task 016 before this validation ever ran — there was less
+  latent defect surface to find. Did not manufacture a finding to justify
+  the exercise.
+- No follow-up task filed, per this task's own design decision (a defect
+  would have become its own task; none was found).
 
 **Blockers encountered:**
-- TBD
+- None.
 
 **Follow-up identified:**
-- TBD
+- None. `recruiter-interview` is now validated at the same bar as
+  `candidate-interview`: released, mechanically tested, and proven via
+  an actual live skill run with independent re-verification — the two
+  content types are on equal footing.
 
 ## Files to Create / Modify
 
